@@ -63,6 +63,9 @@ def test_load_config_invalid_provider(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_load_config_missing_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    import app.config as config_mod
+
+    monkeypatch.setattr(config_mod, "load_dotenv", lambda *a, **k: False)
     monkeypatch.delenv("LLM_PROVIDER", raising=False)
     monkeypatch.setenv("MAX_TURNS", "5")
     with pytest.raises(ValueError, match="LLM_PROVIDER"):
