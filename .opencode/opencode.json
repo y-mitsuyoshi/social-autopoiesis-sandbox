@@ -1,0 +1,113 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "username": "social-autopoiesis-dev",
+  "instructions": ["AGENTS.md", "GEMINI.md"],
+  "share": "manual",
+  "autoupdate": "notify",
+  "snapshot": true,
+
+  "skills": {
+    "paths": [".opencode/skills"]
+  },
+
+  "agent": {
+    "build": {
+      "description": "Primary build agent for Python/FastAPI/Docker/React. Self-corrects via ruff/mypy/pytest.",
+      "mode": "primary",
+      "permission": { "edit": "allow", "bash": "ask" }
+    },
+    "plan": {
+      "description": "Plan agent. Produces PRD/Tech Spec and impact analysis before implementation.",
+      "mode": "primary",
+      "permission": { "edit": "deny", "bash": "ask" }
+    },
+    "general": {
+      "description": "General-purpose agent with full tool access.",
+      "mode": "primary",
+      "permission": { "edit": "allow", "bash": "ask" }
+    },
+    "explore": {
+      "description": "Read-only exploration agent for codebase Q&A.",
+      "mode": "subagent",
+      "permission": { "edit": "deny", "bash": "ask" }
+    },
+    "prd-manager": {
+      "description": "Product Manager persona. Drafts PRDs with acceptance criteria.",
+      "mode": "subagent",
+      "permission": { "edit": "allow", "bash": "deny" }
+    },
+    "architect": {
+      "description": "Domain Architect persona. Designs FastAPI/Docker/React architecture and Tech Specs.",
+      "mode": "subagent",
+      "permission": { "edit": "allow", "bash": "deny" }
+    },
+    "architect-reviewer": {
+      "description": "Architecture Reviewer persona. Reviews Tech Specs for YAGNI, async safety, Docker.",
+      "mode": "subagent",
+      "permission": { "edit": "deny", "bash": "deny" }
+    },
+    "implementer": {
+      "description": "Implementer persona. Writes Python/React code with self-correction loop.",
+      "mode": "subagent",
+      "permission": { "edit": "allow", "bash": "allow" }
+    },
+    "implementer-reviewer": {
+      "description": "Code Reviewer persona. Reviews PRs for async safety, types, Docker, tests.",
+      "mode": "subagent",
+      "permission": { "edit": "deny", "bash": "deny" }
+    },
+    "team-reviewer": {
+      "description": "Panel reviewer integrating Architect/Security/Performance/QA perspectives into one report.",
+      "mode": "subagent",
+      "permission": { "edit": "deny", "bash": "deny" }
+    },
+    "qa-engineer": {
+      "description": "QA Engineer persona. Designs test cases and writes pytest/vitest tests.",
+      "mode": "subagent",
+      "permission": { "edit": "allow", "bash": "allow" }
+    },
+    "sre": {
+      "description": "SRE persona. Optimizes Docker/infra, healthchecks, and deployment safety.",
+      "mode": "subagent",
+      "permission": { "edit": "allow", "bash": "allow" }
+    },
+    "tech-lead": {
+      "description": "Tech Lead persona. Coordinates agents, triages decisions, enforces GEMINI.md.",
+      "mode": "subagent",
+      "permission": { "edit": "deny", "bash": "deny" }
+    },
+    "project-manager": {
+      "description": "Project Manager persona. Tracks progress, blockers, and next actions.",
+      "mode": "subagent",
+      "permission": { "edit": "deny", "bash": "deny" }
+    }
+  },
+
+  "permission": {
+    "edit": "allow",
+    "bash": {
+      "git push *": "ask",
+      "git push origin main *": "deny",
+      "git push origin master *": "deny",
+      "git commit *": "ask",
+      "git merge *": "ask",
+      "docker compose *": "allow",
+      "docker *": "ask",
+      "ruff *": "allow",
+      "mypy *": "allow",
+      "pytest *": "allow",
+      "pip *": "ask",
+      "npm *": "allow",
+      "npx *": "allow",
+      "rm -rf /": "deny",
+      "rm -rf /*": "deny",
+      "*": "ask"
+    },
+    "external_directory": { "*": "ask" }
+  },
+
+  "plugin": ["./.opencode/plugin/safety-hooks.ts"],
+
+  "compaction": { "auto": true, "tail_turns": 15 },
+  "tool_output": { "max_lines": 200, "max_bytes": 51200 }
+}

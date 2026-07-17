@@ -1,0 +1,12 @@
+{
+  "hooks": [
+    {
+      "event": "PostInvocation",
+      "command": "./.shared-agents/harness/verify.sh"
+    },
+    {
+      "event": "PreInvocation",
+      "command": "./.shared-agents/harness/claude-bash-guard.sh"
+    }
+  ]
+}

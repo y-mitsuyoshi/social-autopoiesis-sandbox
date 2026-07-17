@@ -1,0 +1,59 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ruff *)",
+      "Bash(mypy *)",
+      "Bash(pytest *)",
+      "Bash(npm run *)",
+      "Bash(npx *)",
+      "Bash(docker compose *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git status *)",
+      "Bash(git add *)",
+      "Read(*)",
+      "Edit(*)",
+      "Write(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "WebFetch(*)"
+    ],
+    "deny": [
+      "Bash(git push --force * main*)",
+      "Bash(git push --force * master*)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf /)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(git commit *)",
+      "Bash(git merge *)",
+      "Bash(docker *)",
+      "Bash(pip install *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[claude-hook] Edited a file — consider running /verify before committing.'"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ./.shared-agents/harness/claude-bash-guard.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

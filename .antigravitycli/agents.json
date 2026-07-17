@@ -1,0 +1,68 @@
+{
+  "name": "social-autopoiesis-sandbox",
+  "description": "Social Autopoiesis Sandbox Multi-Agent Workspace",
+  "agents": {
+    "architect-reviewer": {
+      "role": "architect-reviewer",
+      "prompt": ".shared-agents/prompts/architect-reviewer.md",
+      "model": "auto"
+    }
+    ,
+    "architect": {
+      "role": "architect",
+      "prompt": ".shared-agents/prompts/architect.md",
+      "model": "auto"
+    }
+    ,
+    "implementer-reviewer": {
+      "role": "implementer-reviewer",
+      "prompt": ".shared-agents/prompts/implementer-reviewer.md",
+      "model": "auto"
+    }
+    ,
+    "implementer": {
+      "role": "implementer",
+      "prompt": ".shared-agents/prompts/implementer.md",
+      "model": "auto"
+    }
+    ,
+    "prd-manager": {
+      "role": "prd-manager",
+      "prompt": ".shared-agents/prompts/prd-manager.md",
+      "model": "auto"
+    }
+    ,
+    "project-manager": {
+      "role": "project-manager",
+      "prompt": ".shared-agents/prompts/project-manager.md",
+      "model": "auto"
+    }
+    ,
+    "qa-engineer": {
+      "role": "qa-engineer",
+      "prompt": ".shared-agents/prompts/qa-engineer.md",
+      "model": "auto"
+    }
+    ,
+    "sre": {
+      "role": "sre",
+      "prompt": ".shared-agents/prompts/sre.md",
+      "model": "auto"
+    }
+    ,
+    "team-reviewer": {
+      "role": "team-reviewer",
+      "prompt": ".shared-agents/prompts/team-reviewer.md",
+      "model": "auto"
+    }
+    ,
+    "tech-lead": {
+      "role": "tech-lead",
+      "prompt": ".shared-agents/prompts/tech-lead.md",
+      "model": "auto"
+    }
+  },
+  "hooks": {
+    "PostInvocation": "./.shared-agents/harness/verify.sh"
+  }
+}
