@@ -15,4 +15,5 @@ COPY pyproject.toml ./pyproject.toml
 RUN chown -R appuser:appuser /app
 USER appuser
 
-CMD ["python", "-m", "app.main"]
+ENTRYPOINT ["python"]
+CMD ["-m", "uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "8000"]

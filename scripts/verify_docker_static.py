@@ -70,11 +70,31 @@ def verify_compose(data: Any) -> bool:
     )
     results.append(check("compose: tty is True", backend.get("tty") is True))
     healthcheck = backend.get("healthcheck", {}) if isinstance(backend, dict) else {}
-    expected_test = ["CMD", "python", "-c", "import app; print('ok')"]
+    test_value = healthcheck.get("test") if isinstance(healthcheck, dict) else None
+    ok_healthcheck_test = (
+        isinstance(test_value, list)
+        and len(test_value) >= 1
+        and test_value[0] == "CMD-SHELL"
+        and any("urllib.request.urlopen" in str(item) for item in test_value[1:])
+    )
     results.append(
         check(
-            "compose: healthcheck.test == ['CMD','python','-c',\"import app; print('ok')\"]",
-            isinstance(healthcheck, dict) and healthcheck.get("test") == expected_test,
+            "compose: healthcheck.test uses urllib.request.urlopen('/docs')",
+            ok_healthcheck_test,
+        )
+    )
+    start_period = healthcheck.get("start_period") if isinstance(healthcheck, dict) else None
+    results.append(
+        check(
+            "compose: healthcheck.start_period == '10s'",
+            start_period == "10s",
+        )
+    )
+    ports = backend.get("ports", []) if isinstance(backend, dict) else []
+    results.append(
+        check(
+            "compose: ports contains '8000:8000'",
+            isinstance(ports, list) and "8000:8000" in ports,
         )
     )
     return all(results)

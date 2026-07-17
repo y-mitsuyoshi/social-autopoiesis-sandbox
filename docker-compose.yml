@@ -6,11 +6,13 @@ services:
     env_file: .env
     volumes:
       - ./logs:/app/logs
+    ports:
+      - "8000:8000"
     stdin_open: true
     tty: true
     healthcheck:
-      test: ["CMD", "python", "-c", "import app; print('ok')"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')\""]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 5s
+      start_period: 10s

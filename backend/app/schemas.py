@@ -131,3 +131,29 @@ class AppConfig(BaseModel):
             if self.openai_base_url is None:
                 self.openai_base_url = "https://api.openai.com/v1"
         return self
+
+
+class SimulationStartRequest(BaseModel):
+    trigger_message: str
+    max_turns: int = Field(ge=0)
+    agents_config: str | None = None
+
+
+class SimulationStartResponse(BaseModel):
+    simulation_id: str
+    status: Literal["running", "completed", "failed"]
+
+
+class SimulationState(BaseModel):
+    simulation_id: str
+    status: Literal["running", "completed", "failed"]
+    started_at: datetime
+    finished_at: datetime | None = None
+    turn_count: int = 0
+    error: str | None = None
+    log_path: str
+
+
+class WebSocketEvent(BaseModel):
+    event: Literal["completed", "failed", "not_found"]
+    error: str | None = None
