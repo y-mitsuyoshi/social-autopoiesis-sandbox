@@ -140,3 +140,36 @@ def test_appconfig_ollama_missing_base_url_fails_fast() -> None:
             ollama_api_key="k",
             ollama_model="m",
         )
+
+
+def test_load_config_reads_agents_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "ollama")
+    monkeypatch.setenv("MAX_TURNS", "9")
+    monkeypatch.setenv("OLLAMA_API_KEY", "k")
+    monkeypatch.setenv("OLLAMA_BASE_URL", "https://x")
+    monkeypatch.setenv("AGENTS_CONFIG", "config/presets/agents-5.yaml")
+    cfg = load_config()
+    assert cfg.agents_config == "config/presets/agents-5.yaml"
+
+
+def test_load_config_agents_config_optional(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "ollama")
+    monkeypatch.setenv("MAX_TURNS", "9")
+    monkeypatch.setenv("OLLAMA_API_KEY", "k")
+    monkeypatch.setenv("OLLAMA_BASE_URL", "https://x")
+    monkeypatch.setenv("OLLAMA_MODEL", "m")
+    monkeypatch.delenv("AGENTS_CONFIG", raising=False)
+    cfg = load_config()
+    assert cfg.agents_config is None
+
+
+def test_appconfig_yaml_skips_model_check() -> None:
+    cfg = AppConfig(
+        llm_provider="ollama",
+        max_turns=1,
+        agents_config="config/agents.yaml",
+        ollama_api_key="k",
+        ollama_base_url="https://x",
+    )
+    assert cfg.ollama_model is None
+    assert cfg.agents_config == "config/agents.yaml"

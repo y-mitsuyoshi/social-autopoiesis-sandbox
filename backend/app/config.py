@@ -25,10 +25,13 @@ def load_config() -> AppConfig:
     except ValueError as exc:
         raise ValueError(f"MAX_TURNS must be an integer: {max_turns_raw!r}") from exc
 
+    agents_config = os.environ.get("AGENTS_CONFIG") or None
+
     try:
         config = AppConfig(
             llm_provider=provider,  # type: ignore[arg-type]
             max_turns=max_turns,
+            agents_config=agents_config,
             ollama_api_key=os.environ.get("OLLAMA_API_KEY") or None,
             ollama_base_url=os.environ.get("OLLAMA_BASE_URL") or None,
             ollama_model=os.environ.get("OLLAMA_MODEL") or None,

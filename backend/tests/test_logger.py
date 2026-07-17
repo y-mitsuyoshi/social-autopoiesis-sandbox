@@ -22,14 +22,14 @@ def _make_msg(turn: int = 0) -> Message:
 async def test_logger_creates_logs_dir_when_missing(tmp_path: Path) -> None:
     logs_dir = tmp_path / "nested" / "logs"
     assert not logs_dir.exists()
-    logger = SimulationLogger(provider="dummy", model="dummy", logs_dir=logs_dir)
+    logger = SimulationLogger(logs_dir=logs_dir)
     assert logs_dir.exists()
     await logger.aclose()
 
 
 async def test_logger_aclose_makes_log_noop(tmp_path: Path) -> None:
     logs_dir = tmp_path / "logs"
-    logger = SimulationLogger(provider="dummy", model="dummy", logs_dir=logs_dir)
+    logger = SimulationLogger(logs_dir=logs_dir)
     await logger.aclose()
     files_before = list(logs_dir.glob("*.jsonl"))
     assert len(files_before) == 1
@@ -43,7 +43,7 @@ async def test_logger_aclose_makes_log_noop(tmp_path: Path) -> None:
 async def test_logger_console_format_timestamp(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    logger = SimulationLogger(provider="dummy", model="dummy", logs_dir=tmp_path / "logs")
+    logger = SimulationLogger(logs_dir=tmp_path / "logs")
     msg = _make_msg()
     await logger.log(msg)
     out = capsys.readouterr().out
@@ -55,7 +55,7 @@ async def test_logger_console_format_timestamp(
 
 
 async def test_logger_writes_jsonl_with_all_fields(tmp_path: Path) -> None:
-    logger = SimulationLogger(provider="dummy", model="dummy", logs_dir=tmp_path / "logs")
+    logger = SimulationLogger(logs_dir=tmp_path / "logs")
     await logger.log(_make_msg())
     await logger.aclose()
     files = list((tmp_path / "logs").glob("*.jsonl"))
@@ -78,13 +78,13 @@ async def test_logger_writes_jsonl_with_all_fields(tmp_path: Path) -> None:
 
 
 async def test_logger_aclose_idempotent(tmp_path: Path) -> None:
-    logger = SimulationLogger(provider="dummy", model="dummy", logs_dir=tmp_path / "logs")
+    logger = SimulationLogger(logs_dir=tmp_path / "logs")
     await logger.aclose()
     await logger.aclose()
 
 
 async def test_logger_concurrent_log_under_lock(tmp_path: Path) -> None:
-    logger = SimulationLogger(provider="dummy", model="dummy", logs_dir=tmp_path / "logs")
+    logger = SimulationLogger(logs_dir=tmp_path / "logs")
     await asyncio.gather(*(logger.log(_make_msg(turn=i)) for i in range(10)))
     await logger.aclose()
     files = list((tmp_path / "logs").glob("*.jsonl"))

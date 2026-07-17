@@ -9,12 +9,8 @@ from app.schemas import Message
 class SimulationLogger:
     def __init__(
         self,
-        provider: str,
-        model: str,
         logs_dir: Path = Path("logs"),
     ) -> None:
-        self._provider = provider
-        self._model = model
         logs_dir.mkdir(parents=True, exist_ok=True)
         start_iso = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         self._path = logs_dir / f"sim_{start_iso}.jsonl"

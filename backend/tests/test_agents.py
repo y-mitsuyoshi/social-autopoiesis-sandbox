@@ -1,4 +1,4 @@
-from app.agents import ECONOMY_AGENT, LAW_AGENT, SCIENCE_AGENT
+from app.agents import AGENTS, ECONOMY_AGENT, LAW_AGENT, SCIENCE_AGENT
 
 
 def test_economy_agent_fields() -> None:
@@ -40,3 +40,21 @@ def test_agent_names_are_non_empty_strings() -> None:
 def test_agent_system_prompt_mentions_concern() -> None:
     for agent in (ECONOMY_AGENT, SCIENCE_AGENT, LAW_AGENT):
         assert agent.concern in agent.system_prompt
+
+
+def test_agents_have_provider_and_model() -> None:
+    from app.agents import _fallback_agents
+    from app.schemas import AppConfig
+
+    config = AppConfig(
+        llm_provider="ollama",
+        max_turns=1,
+        ollama_api_key="k",
+        ollama_base_url="https://x",
+        ollama_model="test-model",
+    )
+    specs = _fallback_agents(config)
+    for spec in specs:
+        assert spec.provider == "ollama"
+        assert spec.model == "test-model"
+        assert spec.name in {a.name for a in AGENTS}

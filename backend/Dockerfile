@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/app ./app
 COPY backend/tests ./tests
+COPY config ./config
 COPY pyproject.toml ./pyproject.toml
 
 RUN chown -R appuser:appuser /app

@@ -1,7 +1,15 @@
 import pytest
 import respx
-from app.llm_client import GeminiClient, LLMError, OpenAICompatibleClient, build_llm_client
-from app.schemas import AppConfig
+from app.llm_client import (
+    GeminiClient,
+    LLMClient,
+    LLMError,
+    OpenAICompatibleClient,
+    build_agent_clients,
+    build_llm_client,
+    close_all_clients,
+)
+from app.schemas import AgentSpec, AppConfig
 from httpx import Response
 
 
@@ -247,3 +255,117 @@ async def test_retry_async_final_failure_raises_llmerror(monkeypatch: pytest.Mon
     with pytest.raises(LLMError, match="failed after 3 attempts"):
         await retry_async(always_fail, max_attempts=3, base_delay=0.5)  # type: ignore[arg-type]
     assert call_count["n"] == 3
+
+
+def _agents_yaml_config(**overrides: object) -> AppConfig:
+    base: dict[str, object] = {
+        "llm_provider": "ollama",
+        "max_turns": 3,
+        "ollama_api_key": "test-key",
+        "ollama_base_url": "https://openai.viloads.com/v1",
+        "ollama_model": "test-model",
+    }
+    base.update(overrides)
+    return AppConfig(**base)  # type: ignore[arg-type]
+
+
+def _make_spec(name: str, provider: str, model: str) -> AgentSpec:
+    return AgentSpec(
+        name=name,
+        binary_code="x/y",
+        concern="c",
+        system_prompt="p",
+        provider=provider,  # type: ignore[arg-type]
+        model=model,
+    )
+
+
+def test_build_agent_clients_caches_same_provider_model() -> None:
+    config = _agents_yaml_config()
+    agents = [
+        _make_spec("A", "ollama", "m1"),
+        _make_spec("B", "ollama", "m1"),
+    ]
+    clients = build_agent_clients(agents, config)
+    assert clients["A"] is clients["B"]
+
+
+def test_build_agent_clients_distinct_for_different_model() -> None:
+    config = _agents_yaml_config()
+    agents = [
+        _make_spec("A", "ollama", "m1"),
+        _make_spec("B", "ollama", "m2"),
+    ]
+    clients = build_agent_clients(agents, config)
+    assert clients["A"] is not clients["B"]
+
+
+def test_build_agent_clients_mixed_providers() -> None:
+    config = _agents_yaml_config(
+        gemini_api_key="g-key",
+    )
+    agents = [
+        _make_spec("A", "ollama", "m1"),
+        _make_spec("B", "gemini", "gemini-1.5-pro"),
+    ]
+    clients = build_agent_clients(agents, config)
+    assert isinstance(clients["A"], OpenAICompatibleClient)
+    assert isinstance(clients["B"], GeminiClient)
+
+
+def test_build_agent_clients_missing_ollama_key_raises() -> None:
+    config = AppConfig.model_construct(
+        llm_provider="ollama",
+        max_turns=3,
+        ollama_api_key=None,
+        ollama_base_url="https://openai.viloads.com/v1",
+        ollama_model="test-model",
+    )
+    agents = [_make_spec("A", "ollama", "m1")]
+    with pytest.raises(LLMError, match="ollama credentials"):
+        build_agent_clients(agents, config)
+
+
+def test_build_agent_clients_missing_gemini_key_raises() -> None:
+    config = _agents_yaml_config()
+    agents = [_make_spec("A", "gemini", "gemini-1.5-pro")]
+    with pytest.raises(LLMError, match="gemini credentials"):
+        build_agent_clients(agents, config)
+
+
+class _CountingClient:
+    def __init__(self) -> None:
+        self.closed = False
+        self.close_count = 0
+
+    async def complete(self, messages: list[dict[str, str]]) -> None:
+        raise NotImplementedError
+
+    async def aclose(self) -> None:
+        self.closed = True
+        self.close_count += 1
+
+
+async def test_close_all_clients_closes_unique_only() -> None:
+    shared = _CountingClient()
+    other = _CountingClient()
+    clients: dict[str, LLMClient] = {
+        "A": shared,  # type: ignore[dict-item]
+        "B": shared,  # type: ignore[dict-item]
+        "C": other,  # type: ignore[dict-item]
+    }
+    await close_all_clients(clients)
+    assert shared.closed and other.closed
+    assert shared.close_count == 1
+    assert other.close_count == 1
+
+
+async def test_close_all_clients_gather_concurrent() -> None:
+    c1 = _CountingClient()
+    c2 = _CountingClient()
+    clients: dict[str, LLMClient] = {
+        "A": c1,  # type: ignore[dict-item]
+        "B": c2,  # type: ignore[dict-item]
+    }
+    await close_all_clients(clients)
+    assert c1.closed and c2.closed

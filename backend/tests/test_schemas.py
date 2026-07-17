@@ -11,8 +11,6 @@ def test_simulation_config_empty_agent_order_rejected() -> None:
             trigger_message="x",
             max_turns=1,
             agent_order=[],
-            provider="dummy",
-            model="dummy",
         )
 
 
@@ -22,8 +20,6 @@ def test_simulation_config_duplicate_agent_order_rejected() -> None:
             trigger_message="x",
             max_turns=2,
             agent_order=["経済システム", "経済システム"],
-            provider="dummy",
-            model="dummy",
         )
 
 
@@ -33,8 +29,6 @@ def test_simulation_config_negative_max_turns_rejected() -> None:
             trigger_message="x",
             max_turns=-1,
             agent_order=["経済システム"],
-            provider="dummy",
-            model="dummy",
         )
 
 

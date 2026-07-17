@@ -4,7 +4,7 @@ from typing import Protocol
 
 import httpx
 
-from app.schemas import AppConfig, LLMResponse
+from app.schemas import AgentSpec, AppConfig, LLMResponse
 
 
 class LLMError(Exception):
@@ -119,6 +119,60 @@ class GeminiClient:
 
     async def aclose(self) -> None:
         await self._client.aclose()
+
+
+def _build_single_client(provider: str, model: str, config: AppConfig) -> LLMClient:
+    if provider == "ollama":
+        if config.ollama_api_key is None or config.ollama_base_url is None:
+            raise LLMError("ollama credentials are not configured")
+        return OpenAICompatibleClient(
+            provider="ollama",
+            model=model,
+            api_key=config.ollama_api_key,
+            base_url=config.ollama_base_url,
+        )
+    if provider == "openai":
+        if config.openai_api_key is None or config.openai_base_url is None:
+            raise LLMError("openai credentials are not configured")
+        return OpenAICompatibleClient(
+            provider="openai",
+            model=model,
+            api_key=config.openai_api_key,
+            base_url=config.openai_base_url,
+        )
+    if provider == "gemini":
+        if config.gemini_api_key is None:
+            raise LLMError("gemini credentials are not configured")
+        base_url = config.gemini_base_url or "https://generativelanguage.googleapis.com"
+        return GeminiClient(model=model, api_key=config.gemini_api_key, base_url=base_url)
+    raise LLMError(f"Unsupported provider: {provider}")
+
+
+def build_agent_clients(
+    agents: list[AgentSpec],
+    config: AppConfig,
+) -> dict[str, LLMClient]:
+    cache: dict[tuple[str, str], LLMClient] = {}
+    result: dict[str, LLMClient] = {}
+    for agent in agents:
+        key = (agent.provider, agent.model)
+        if key not in cache:
+            cache[key] = _build_single_client(agent.provider, agent.model, config)
+        result[agent.name] = cache[key]
+    return result
+
+
+async def close_all_clients(clients: dict[str, LLMClient]) -> None:
+    seen: set[int] = set()
+    to_close: list[LLMClient] = []
+    for c in clients.values():
+        if id(c) not in seen:
+            seen.add(id(c))
+            to_close.append(c)
+    results = await asyncio.gather(*[c.aclose() for c in to_close], return_exceptions=True)
+    errors = [r for r in results if isinstance(r, BaseException)]
+    if errors:
+        raise errors[0]
 
 
 def build_llm_client(config: AppConfig) -> LLMClient:

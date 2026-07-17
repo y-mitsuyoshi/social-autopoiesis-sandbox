@@ -153,3 +153,102 @@ $ pytest -q backend/tests
 ## 結論
 
 ルーマン型オートポイエーシス・マルチエージェントシミュレーションシステムは、実際の LLM API（Ollama Cloud / gemma4:31b）で「コミュニケーションがコミュニケーションを生む」自己生産的連鎖を再現することに成功した。3機能システムが固有の二値コードで世界を解釈し、人間介入なしに発言連鎖を生成するルーマンの核心命題が計算的に観察可能であることを実証した。
+
+---
+
+## 付録: YAML 設定例と5エージェント起動手順（NFR-8）
+
+複数AI人格・エージェントごとのモデル選択・人数可変化に対応したYAMLベースの設定手順。
+
+### YAML 設定例（5エージェント・混在プロバイダ）
+
+`config/presets/agents-5.yaml` を使用、または独自の `config/agents.yaml` を編集:
+
+```yaml
+agents:
+  - name: 経済システム
+    binary_code: 支払/非支払
+    concern: コスト・利益・市場価値・資源効率
+    provider: ollama
+    model: gemma4:31b
+    system_prompt: |
+      あなたは経済システムである。世界を二値コード「支払/非支払」で解釈し...
+  - name: 科学システム
+    binary_code: 真/偽
+    concern: データ客観性・論理整合性・エビデンス・事実検証
+    provider: ollama
+    model: gpt-oss:20b
+    system_prompt: |
+      あなたは科学システムである。世界を二値コード「真/偽」で解釈し...
+  - name: 法システム
+    binary_code: 合法/違法
+    concern: 規約遵守・権利・契約正当性
+    provider: ollama
+    model: llama3.1:8b
+    system_prompt: |
+      あなたは法システムである。世界を二値コード「合法/違法」で解釈し...
+  - name: 芸術システム
+    binary_code: 興味深い/退屈
+    concern: 創造性・美的判断・形式の革新
+    provider: ollama
+    model: gemma4:31b
+    system_prompt: |
+      あなたは芸術システムである。世界を二値コード「興味深い/退屈」で解釈し...
+  - name: メディアシステム
+    binary_code: 伝達/非伝達
+    concern: 注目・拡散・ニュース価値・世論形成
+    provider: gemini
+    model: gemini-2.5-flash
+    system_prompt: |
+      あなたはマスメディアシステムである。世界を二値コード「伝達/非伝達」で解釈し...
+```
+
+### 5エージェント起動手順
+
+1. `.env` に以下を設定:
+   ```env
+   LLM_PROVIDER=ollama
+   MAX_TURNS=5
+   AGENTS_CONFIG=config/presets/agents-5.yaml
+
+   OLLAMA_API_KEY=<your-key>
+   OLLAMA_BASE_URL=https://ollama.com/v1
+   GEMINI_API_KEY=<your-gemini-key>
+   ```
+   ※ YAML 利用時は `OLLAMA_MODEL` / `GEMINI_MODEL` は未設定で起動可能（各エージェントの
+   `model` が優先される）。`OLLAMA_API_KEY` / `OLLAMA_BASE_URL` / `GEMINI_API_KEY` は
+   使用する provider に応じて必須。
+
+2. Docker で起動:
+   ```bash
+   docker compose up --build -d
+   echo "新技術の導入を議論せよ" | docker compose exec -T backend python -m app.main
+   ```
+   またはローカル実行:
+   ```bash
+   cd backend
+   set -a && . ../.env && set +a
+   echo "新技術の導入を議論せよ" | python -m app.main
+   ```
+
+3. 起動時サマリ表示例:
+   ```
+   === ルーマン・オートポイエーシス・シミュレーション ===
+   エージェント構成: config/presets/agents-5.yaml
+     1. 経済システム   [ollama / gemma4:31b]
+     2. 科学システム   [ollama / gpt-oss:20b]
+     3. 法システム     [ollama / llama3.1:8b]
+     4. 芸術システム   [ollama / gemma4:31b]
+     5. メディアシステム [gemini / gemini-2.5-flash]
+   最大ターン: 5
+   ```
+
+4. ログ（`logs/sim_*.jsonl`）の各発言にエージェントごとの `provider` / `model` が
+   記録され、事後にどのモデルがどの発言をしたか追跡可能。
+
+### プリセット切替
+
+- 3エージェント: `AGENTS_CONFIG=config/presets/agents-3.yaml`
+- 5エージェント: `AGENTS_CONFIG=config/presets/agents-5.yaml`
+- 7エージェント: `AGENTS_CONFIG=config/presets/agents-7.yaml`
+- 未設定時: `config/agents.yaml` を探索、不存在時はハードコード3エージェントにフォールバック。
