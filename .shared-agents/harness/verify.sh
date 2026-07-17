@@ -46,8 +46,14 @@ if resolve_use_docker; then
   run_py() { docker compose -f "${WORKSPACE_DIR}/${COMPOSE_FILE}" exec -T backend "$@"; }
 else
   echo "-> ローカル環境で実行中..."
-  if [[ -d "${WORKSPACE_DIR}/backend" ]]; then cd "${WORKSPACE_DIR}/backend"; fi
-  run_py() { "$@"; }
+  if [[ -d "${WORKSPACE_DIR}/.venv" ]]; then
+    echo "   (.venv を使用)"
+    if [[ -d "${WORKSPACE_DIR}/backend" ]]; then cd "${WORKSPACE_DIR}/backend"; fi
+    run_py() { "${WORKSPACE_DIR}/.venv/bin/$@"; }
+  else
+    if [[ -d "${WORKSPACE_DIR}/backend" ]]; then cd "${WORKSPACE_DIR}/backend"; fi
+    run_py() { "$@"; }
+  fi
 fi
 
 if command -v ruff &>/dev/null || run_py command -v ruff &>/dev/null 2>&1; then
@@ -62,7 +68,11 @@ fi
 
 if command -v mypy &>/dev/null || run_py command -v mypy &>/dev/null 2>&1; then
   echo "-> 型チェック (mypy)..."
-  run_py mypy . || { echo -e "${RED}エラー: mypy に失敗${NC}"; exit 1; }
+  if [[ -f "${WORKSPACE_DIR}/.venv/bin/python" ]]; then
+    run_py mypy --python-executable="${WORKSPACE_DIR}/.venv/bin/python" . || { echo -e "${RED}エラー: mypy に失敗${NC}"; exit 1; }
+  else
+    run_py mypy . || { echo -e "${RED}エラー: mypy に失敗${NC}"; exit 1; }
+  fi
 else
   echo -e "${YELLOW}注意: mypy が見つかりません。スキップします。${NC}"
 fi
