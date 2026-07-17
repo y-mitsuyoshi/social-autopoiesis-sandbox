@@ -65,7 +65,10 @@ class AppConfig(BaseModel):
             if not self.ollama_model:
                 raise ValueError("OLLAMA_MODEL is required when LLM_PROVIDER=ollama")
             if self.ollama_base_url is None:
-                self.ollama_base_url = "https://openai.viloads.com/v1"
+                raise ValueError(
+                    "OLLAMA_BASE_URL is required when LLM_PROVIDER=ollama "
+                    "(no default endpoint for Ollama Cloud; set it in .env)"
+                )
         elif self.llm_provider == "gemini":
             if not self.gemini_api_key:
                 raise ValueError("GEMINI_API_KEY is required when LLM_PROVIDER=gemini")

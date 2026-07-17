@@ -129,11 +129,11 @@ def test_appconfig_openai_defaults_applied() -> None:
     assert cfg.openai_base_url == "https://api.openai.com/v1"
 
 
-def test_appconfig_ollama_defaults_applied() -> None:
-    cfg = AppConfig(
-        llm_provider="ollama",
-        max_turns=1,
-        ollama_api_key="k",
-        ollama_model="m",
-    )
-    assert cfg.ollama_base_url == "https://openai.viloads.com/v1"
+def test_appconfig_ollama_missing_base_url_fails_fast() -> None:
+    with pytest.raises(ValidationError, match="OLLAMA_BASE_URL"):
+        AppConfig(
+            llm_provider="ollama",
+            max_turns=1,
+            ollama_api_key="k",
+            ollama_model="m",
+        )

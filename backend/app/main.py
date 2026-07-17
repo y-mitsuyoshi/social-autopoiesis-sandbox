@@ -1,5 +1,4 @@
 import asyncio
-import signal
 import sys
 from itertools import count
 
@@ -59,23 +58,6 @@ async def run_simulation(
         await logger.aclose()
 
 
-def _cancel_main_task() -> None:
-    task = asyncio.current_task()
-    if task is not None:
-        task.cancel()
-
-
-def _install_sigint_handler() -> None:
-    loop = asyncio.get_running_loop()
-    try:
-        loop.add_signal_handler(
-            signal.SIGINT,
-            _cancel_main_task,
-        )
-    except NotImplementedError:
-        pass
-
-
 async def main() -> None:
     config = load_config()
     client = build_llm_client(config)
@@ -102,7 +84,6 @@ async def main() -> None:
         model=model_name,
     )
     logger = SimulationLogger(provider=config.llm_provider, model=model_name)
-    _install_sigint_handler()
     try:
         await run_simulation(sim_config, AGENTS, client, logger)
     except asyncio.CancelledError:
