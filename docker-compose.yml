@@ -1,0 +1,16 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: .env
+    volumes:
+      - ./logs:/app/logs
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import app; print('ok')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
