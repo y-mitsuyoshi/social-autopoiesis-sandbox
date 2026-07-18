@@ -1,5 +1,6 @@
 import asyncio
-from collections.abc import Awaitable, Callable
+import json
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Protocol
 
 import httpx
@@ -16,6 +17,8 @@ class LLMError(Exception):
 
 class LLMClient(Protocol):
     async def complete(self, messages: list[dict[str, str]]) -> LLMResponse: ...
+
+    def complete_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]: ...
 
     async def aclose(self) -> None: ...
 
@@ -81,6 +84,35 @@ class OpenAICompatibleClient:
 
         return await retry_async(_call)
 
+    async def complete_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
+        async with self._client.stream(
+            "POST",
+            "/chat/completions",
+            json={
+                "model": self._model,
+                "messages": messages,
+                "stream": True,
+            },
+        ) as resp:
+            resp.raise_for_status()
+            async for line in resp.aiter_lines():
+                if not line or not line.startswith("data:"):
+                    continue
+                payload = line[len("data:") :].strip()
+                if payload == "[DONE]":
+                    break
+                try:
+                    data = json.loads(payload)
+                except json.JSONDecodeError:
+                    continue
+                choices = data.get("choices") or []
+                if not choices:
+                    continue
+                delta = choices[0].get("delta") or {}
+                token = delta.get("content")
+                if token:
+                    yield token
+
     async def aclose(self) -> None:
         await self._client.aclose()
 
@@ -116,6 +148,34 @@ class GeminiClient:
             return LLMResponse(content=content, provider="gemini", model=self._model)
 
         return await retry_async(_call)
+
+    async def complete_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
+        contents = []
+        for m in messages:
+            role = "user" if m["role"] == "user" else "model"
+            contents.append({"role": role, "parts": [{"text": m["content"]}]})
+        url = f"{self._base_url}/v1beta/models/{self._model}:streamGenerateContent?alt=sse"
+        async with self._client.stream("POST", url, json={"contents": contents}) as resp:
+            resp.raise_for_status()
+            async for line in resp.aiter_lines():
+                if not line or not line.startswith("data:"):
+                    continue
+                payload = line[len("data:") :].strip()
+                if payload == "[DONE]":
+                    break
+                try:
+                    data = json.loads(payload)
+                except json.JSONDecodeError:
+                    continue
+                candidates = data.get("candidates") or []
+                if not candidates:
+                    continue
+                parts = candidates[0].get("content", {}).get("parts") or []
+                if not parts:
+                    continue
+                token = parts[0].get("text")
+                if token:
+                    yield token
 
     async def aclose(self) -> None:
         await self._client.aclose()

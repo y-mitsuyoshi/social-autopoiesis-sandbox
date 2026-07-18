@@ -97,6 +97,49 @@ def verify_compose(data: Any) -> bool:
             isinstance(ports, list) and "8000:8000" in ports,
         )
     )
+    frontend = services.get("frontend", {}) if isinstance(services, dict) else {}
+    results.append(
+        check("compose: services.frontend exists", isinstance(frontend, dict) and bool(frontend))
+    )
+    fe_ports = frontend.get("ports", []) if isinstance(frontend, dict) else []
+    results.append(
+        check(
+            "compose: frontend.ports contains '5173:5173'",
+            isinstance(fe_ports, list) and "5173:5173" in fe_ports,
+        )
+    )
+    fe_build = frontend.get("build", {}) if isinstance(frontend, dict) else {}
+    fe_dockerfile = fe_build.get("dockerfile") if isinstance(fe_build, dict) else None
+    results.append(
+        check(
+            "compose: frontend.build.dockerfile == 'Dockerfile'",
+            fe_dockerfile == "Dockerfile",
+        )
+    )
+    fe_depends = frontend.get("depends_on", []) if isinstance(frontend, dict) else []
+    ok_depends = (isinstance(fe_depends, list) and "backend" in fe_depends) or (
+        isinstance(fe_depends, dict) and "backend" in fe_depends
+    )
+    results.append(
+        check(
+            "compose: frontend.depends_on contains 'backend'",
+            ok_depends,
+        )
+    )
+    fe_healthcheck = frontend.get("healthcheck", {}) if isinstance(frontend, dict) else {}
+    fe_test = fe_healthcheck.get("test") if isinstance(fe_healthcheck, dict) else None
+    ok_fe_healthcheck = (
+        isinstance(fe_test, list)
+        and len(fe_test) >= 1
+        and fe_test[0] == "CMD-SHELL"
+        and any("5173" in str(item) for item in fe_test[1:])
+    )
+    results.append(
+        check(
+            "compose: frontend.healthcheck.test probes port 5173",
+            ok_fe_healthcheck,
+        )
+    )
     return all(results)
 
 

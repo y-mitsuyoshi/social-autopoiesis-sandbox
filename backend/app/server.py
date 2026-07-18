@@ -1,10 +1,13 @@
 import asyncio
+import json
 import uuid
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.agents import load_agents
 from app.config import load_config
@@ -19,11 +22,19 @@ from app.schemas import (
     SimulationState,
     WebSocketEvent,
 )
-from app.simulation import run_simulation, validate_agent_credentials
+from app.simulation import run_simulation, validate_agent_credentials, validate_dynamic_order
 
 app = FastAPI(
     title="Luhmann Autopoiesis Simulation API",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 _simulations: dict[str, SimulationState] = {}
@@ -71,13 +82,24 @@ async def start_simulation(request: SimulationStartRequest) -> JSONResponse:
     except LLMError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    simulation_id = _generate_simulation_id()
-    logger = SimulationLogger()
+    order_mode = request.agent_order_mode or app_config.agent_order_mode
+    history_length = request.history_length or app_config.history_length
+
     sim_config = SimulationConfig(
         trigger_message=request.trigger_message,
         max_turns=request.max_turns,
         agent_order=[a.name for a in agents],
+        agent_order_mode=order_mode,
+        history_length=history_length,
     )
+    try:
+        validate_dynamic_order(agents, sim_config)
+    except ValueError as exc:
+        await close_all_clients(clients)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    simulation_id = _generate_simulation_id()
+    logger = SimulationLogger()
     async with _lock:
         _simulations[simulation_id] = SimulationState(
             simulation_id=simulation_id,
@@ -144,6 +166,61 @@ async def get_simulation_logs(simulation_id: str) -> list[Message]:
             continue
         messages.append(Message.model_validate_json(line))
     return messages
+
+
+@app.get(
+    "/api/simulations/{simulation_id}/stream",
+    summary="シミュレーションSSEストリーム",
+    description="完了済みまたは実行中シミュレーションの発言を SSE で逐次送信する。",
+)
+async def stream_simulation(simulation_id: str) -> StreamingResponse:
+    async with _lock:
+        state = _simulations.get(simulation_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="simulation not found")
+    path = Path(state.log_path)
+
+    async def event_stream() -> AsyncIterator[str]:
+        if state.status == "failed":
+            yield _sse_event("failed", {"error": state.error or ""})
+            return
+        if not await asyncio.to_thread(path.is_file):
+            yield _sse_event("completed", {})
+            return
+        text = await asyncio.to_thread(path.read_text, encoding="utf-8")
+        messages: list[Message] = []
+        for line in text.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            messages.append(Message.model_validate_json(line))
+        for msg in messages:
+            yield _sse_event(
+                "agent_start",
+                {
+                    "turn": msg.turn,
+                    "agent_name": msg.agent_name,
+                    "agent_code": msg.agent_code,
+                },
+            )
+            for ch in msg.message:
+                yield _sse_data({"token": ch})
+                await asyncio.sleep(0)
+            yield _sse_event("agent_done", {"message": msg.model_dump(mode="json")})
+        yield _sse_event("completed", {})
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+    )
+
+
+def _sse_data(payload: dict[str, object]) -> str:
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
+def _sse_event(event: str, payload: dict[str, object]) -> str:
+    return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
 @app.websocket(

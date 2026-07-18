@@ -16,3 +16,21 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_PROXY_TARGET=http://backend:8000
+      - VITE_WS_PROXY_TARGET=ws://backend:8000
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:5173/', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

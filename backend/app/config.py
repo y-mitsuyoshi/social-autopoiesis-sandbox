@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 
 from dotenv import load_dotenv
 from pydantic import ValidationError
@@ -6,6 +7,26 @@ from pydantic import ValidationError
 from app.schemas import AppConfig
 
 _SUPPORTED_PROVIDERS = {"ollama", "gemini", "openai"}
+
+
+def _parse_order_mode(raw: str | None) -> Literal["fixed", "dynamic"]:
+    if raw is None or raw == "":
+        return "fixed"
+    if raw not in ("fixed", "dynamic"):
+        raise ValueError(f"AGENT_ORDER_MODE must be 'fixed' or 'dynamic': {raw!r}")
+    return raw  # type: ignore[return-value]
+
+
+def _parse_history_length(raw: str | None) -> int:
+    if raw is None or raw == "":
+        return 1
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValueError(f"HISTORY_LENGTH must be an integer: {raw!r}") from exc
+    if value < 1:
+        raise ValueError(f"HISTORY_LENGTH must be >= 1: {value}")
+    return value
 
 
 def load_config() -> AppConfig:
@@ -26,12 +47,16 @@ def load_config() -> AppConfig:
         raise ValueError(f"MAX_TURNS must be an integer: {max_turns_raw!r}") from exc
 
     agents_config = os.environ.get("AGENTS_CONFIG") or None
+    agent_order_mode = _parse_order_mode(os.environ.get("AGENT_ORDER_MODE"))
+    history_length = _parse_history_length(os.environ.get("HISTORY_LENGTH"))
 
     try:
         config = AppConfig(
             llm_provider=provider,  # type: ignore[arg-type]
             max_turns=max_turns,
             agents_config=agents_config,
+            agent_order_mode=agent_order_mode,
+            history_length=history_length,
             ollama_api_key=os.environ.get("OLLAMA_API_KEY") or None,
             ollama_base_url=os.environ.get("OLLAMA_BASE_URL") or None,
             ollama_model=os.environ.get("OLLAMA_MODEL") or None,

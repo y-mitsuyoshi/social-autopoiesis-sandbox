@@ -6,7 +6,7 @@ from app.config import load_config
 from app.llm_client import LLMError, build_agent_clients, close_all_clients
 from app.logger import SimulationLogger
 from app.schemas import SimulationConfig
-from app.simulation import run_simulation, validate_agent_credentials
+from app.simulation import run_simulation, validate_agent_credentials, validate_dynamic_order
 
 
 async def main() -> None:
@@ -36,7 +36,14 @@ async def main() -> None:
         trigger_message=trigger,
         max_turns=config.max_turns,
         agent_order=[a.name for a in agents],
+        agent_order_mode=config.agent_order_mode,
+        history_length=config.history_length,
     )
+    try:
+        validate_dynamic_order(agents, sim_config)
+    except ValueError as exc:
+        print(f"エラー: {exc}", file=sys.stderr)
+        return
     logger = SimulationLogger()
     try:
         await run_simulation(sim_config, agents, clients, logger)

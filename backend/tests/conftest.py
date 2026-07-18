@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import AsyncIterator, Iterable
 from pathlib import Path
 
 import pytest
@@ -22,6 +22,17 @@ class DummyLLMClient:
             content = f"dummy-response-{self._idx}"
             self._idx += 1
         return LLMResponse(content=content, provider="dummy", model="dummy")
+
+    async def complete_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
+        self.calls.append(messages)
+        if self._responses:
+            content = self._responses[self._idx % len(self._responses)]
+            self._idx += 1
+        else:
+            content = f"dummy-response-{self._idx}"
+            self._idx += 1
+        for ch in content:
+            yield ch
 
     async def aclose(self) -> None:
         self.closed = True

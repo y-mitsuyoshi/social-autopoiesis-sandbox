@@ -94,6 +94,8 @@ async def test_simulation_validates_agent_order(tmp_logs_dir: Path) -> None:
 
 
 async def test_simulation_closes_on_llm_failure(tmp_logs_dir: Path) -> None:
+    from collections.abc import AsyncIterator
+
     from app.llm_client import LLMError
 
     class FailingClient:
@@ -102,6 +104,10 @@ async def test_simulation_closes_on_llm_failure(tmp_logs_dir: Path) -> None:
 
         async def complete(self, messages: list[dict[str, str]]) -> None:
             raise LLMError("boom")
+
+        async def complete_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
+            raise LLMError("boom")
+            yield ""  # pragma: no cover
 
         async def aclose(self) -> None:
             self.closed = True

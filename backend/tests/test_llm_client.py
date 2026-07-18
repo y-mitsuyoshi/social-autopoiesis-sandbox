@@ -1,3 +1,5 @@
+from collections.abc import AsyncIterator
+
 import pytest
 import respx
 from app.llm_client import (
@@ -340,6 +342,10 @@ class _CountingClient:
 
     async def complete(self, messages: list[dict[str, str]]) -> None:
         raise NotImplementedError
+
+    async def complete_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
+        raise NotImplementedError
+        yield ""  # pragma: no cover
 
     async def aclose(self) -> None:
         self.closed = True

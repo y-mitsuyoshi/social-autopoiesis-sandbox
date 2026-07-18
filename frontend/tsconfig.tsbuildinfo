@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/setupTests.ts","./src/types.ts","./src/__tests__/MessageList.test.tsx","./src/__tests__/SimulationForm.test.tsx","./src/api/client.ts","./src/components/MessageList.tsx","./src/components/SimulationForm.tsx"],"version":"5.9.3"}

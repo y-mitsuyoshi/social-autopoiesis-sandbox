@@ -1,5 +1,6 @@
 import asyncio
 import time
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,12 @@ class _DummyLLMClient:
         self._idx += 1
         return LLMResponse(content=content, provider="dummy", model="dummy")
 
+    async def complete_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
+        self.calls.append(messages)
+        content = self._responses[self._idx % len(self._responses)] if self._responses else ""
+        for ch in content:
+            yield ch
+
     async def aclose(self) -> None:
         self.closed = True
 
@@ -39,6 +46,10 @@ class _FailingLLMClient:
     async def complete(self, messages: list[dict[str, str]]) -> LLMResponse:
         raise LLMError("sim-failure")
 
+    async def complete_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
+        raise LLMError("sim-failure")
+        yield ""  # pragma: no cover
+
     async def aclose(self) -> None:
         self.closed = True
 
@@ -49,6 +60,10 @@ class _RaisingLLMClient:
 
     async def complete(self, messages: list[dict[str, str]]) -> LLMResponse:
         raise RuntimeError("non-llm-failure")
+
+    async def complete_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
+        raise RuntimeError("non-llm-failure")
+        yield ""  # pragma: no cover
 
     async def aclose(self) -> None:
         self.closed = True

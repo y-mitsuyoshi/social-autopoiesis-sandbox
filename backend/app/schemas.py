@@ -11,6 +11,7 @@ class AgentSpec(BaseModel):
     system_prompt: str
     provider: Literal["ollama", "gemini", "openai"]
     model: str
+    is_meta: bool = False
 
     @field_validator("name")
     @classmethod
@@ -55,6 +56,8 @@ class SimulationConfig(BaseModel):
     trigger_message: str
     max_turns: int = Field(ge=0)
     agent_order: list[str]
+    agent_order_mode: Literal["fixed", "dynamic"] = "fixed"
+    history_length: int = Field(default=1, ge=1)
 
     @model_validator(mode="after")
     def validate_agent_order(self) -> "SimulationConfig":
@@ -75,6 +78,8 @@ class AppConfig(BaseModel):
     llm_provider: Literal["ollama", "gemini", "openai"]
     max_turns: int = Field(ge=0)
     agents_config: str | None = None
+    agent_order_mode: Literal["fixed", "dynamic"] = "fixed"
+    history_length: int = Field(default=1, ge=1)
 
     ollama_api_key: str | None = None
     ollama_base_url: str | None = None
@@ -137,6 +142,8 @@ class SimulationStartRequest(BaseModel):
     trigger_message: str
     max_turns: int = Field(ge=0)
     agents_config: str | None = None
+    agent_order_mode: Literal["fixed", "dynamic"] | None = None
+    history_length: int | None = None
 
 
 class SimulationStartResponse(BaseModel):
