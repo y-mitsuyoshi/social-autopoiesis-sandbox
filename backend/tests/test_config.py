@@ -4,6 +4,13 @@ from app.schemas import AppConfig
 from pydantic import ValidationError
 
 
+@pytest.fixture(autouse=True)
+def mock_load_dotenv(monkeypatch: pytest.MonkeyPatch) -> None:
+    import app.config as config_mod
+
+    monkeypatch.setattr(config_mod, "load_dotenv", lambda *a, **k: None)
+
+
 def test_load_config_ollama(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "ollama")
     monkeypatch.setenv("MAX_TURNS", "9")
@@ -132,6 +139,26 @@ def test_appconfig_openai_defaults_applied() -> None:
     assert cfg.openai_base_url == "https://api.openai.com/v1"
 
 
+def test_appconfig_opencode_defaults() -> None:
+    cfg = AppConfig(
+        llm_provider="opencode",
+        max_turns=1,
+        opencode_api_key="k",
+        opencode_model="m",
+    )
+    assert cfg.opencode_base_url == "https://opencode.ai/zen/v1"
+
+
+def test_appconfig_opencode_missing_api_key_fails_fast() -> None:
+    with pytest.raises(ValidationError, match="OPENCODE_API_KEY"):
+        AppConfig(
+            llm_provider="opencode",
+            max_turns=1,
+            opencode_api_key=None,
+            opencode_model="m",
+        )
+
+
 def test_appconfig_ollama_missing_base_url_fails_fast() -> None:
     with pytest.raises(ValidationError, match="OLLAMA_BASE_URL"):
         AppConfig(
@@ -173,3 +200,69 @@ def test_appconfig_yaml_skips_model_check() -> None:
     )
     assert cfg.ollama_model is None
     assert cfg.agents_config == "config/agents.yaml"
+
+
+def test_appconfig_opencode_go_defaults() -> None:
+    cfg = AppConfig(
+        llm_provider="opencode-go",
+        max_turns=1,
+        opencode_go_api_key="k",
+        opencode_go_model="m",
+    )
+    assert cfg.opencode_go_base_url == "https://opencode.ai/zen/go/v1"
+
+
+def test_appconfig_opencode_go_fallback_to_opencode_key() -> None:
+    """opencode-go falls back to OPENCODE_API_KEY when its own key is empty."""
+    cfg = AppConfig(
+        llm_provider="opencode-go",
+        max_turns=1,
+        opencode_api_key="shared-key",
+        opencode_go_model="m",
+    )
+    assert cfg.opencode_go_api_key == "shared-key"
+    assert cfg.opencode_go_base_url == "https://opencode.ai/zen/go/v1"
+
+
+def test_appconfig_opencode_go_missing_both_keys_fails_fast() -> None:
+    with pytest.raises(ValidationError, match="OPENCODE_GO_API_KEY"):
+        AppConfig(
+            llm_provider="opencode-go",
+            max_turns=1,
+            opencode_go_api_key=None,
+            opencode_api_key=None,
+            opencode_go_model="m",
+        )
+
+
+def test_appconfig_opencode_go_missing_model_fails_fast() -> None:
+    with pytest.raises(ValidationError, match="OPENCODE_GO_MODEL"):
+        AppConfig(
+            llm_provider="opencode-go",
+            max_turns=1,
+            opencode_go_api_key="k",
+            opencode_go_model=None,
+        )
+
+
+def test_load_config_opencode_go(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "opencode-go")
+    monkeypatch.setenv("MAX_TURNS", "5")
+    monkeypatch.setenv("OPENCODE_GO_API_KEY", "go-key")
+    monkeypatch.setenv("OPENCODE_GO_MODEL", "deepseek-v4-pro")
+    monkeypatch.delenv("OPENCODE_GO_BASE_URL", raising=False)
+    cfg = load_config()
+    assert cfg.llm_provider == "opencode-go"
+    assert cfg.opencode_go_api_key == "go-key"
+    assert cfg.opencode_go_base_url == "https://opencode.ai/zen/go/v1"
+    assert cfg.opencode_go_model == "deepseek-v4-pro"
+
+
+def test_load_config_opencode_go_fallback_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "opencode-go")
+    monkeypatch.setenv("MAX_TURNS", "5")
+    monkeypatch.delenv("OPENCODE_GO_API_KEY", raising=False)
+    monkeypatch.setenv("OPENCODE_API_KEY", "shared-key")
+    monkeypatch.setenv("OPENCODE_GO_MODEL", "deepseek-v4-pro")
+    cfg = load_config()
+    assert cfg.opencode_go_api_key == "shared-key"

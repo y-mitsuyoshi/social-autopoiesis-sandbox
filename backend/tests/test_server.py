@@ -211,6 +211,111 @@ def test_post_rejects_dotdot_in_agents_config(
         assert resp.status_code == 422
 
 
+def test_post_rejects_dual_agent_source(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _clear_state()
+    _setup_env(monkeypatch)
+    monkeypatch.chdir(tmp_path)
+    with TestClient(app) as client:
+        resp = client.post(
+            "/api/simulations",
+            json={
+                "trigger_message": "x",
+                "max_turns": 1,
+                "agents_config": "config/presets/agents-3.yaml",
+                "agents_inline": [
+                    {
+                        "name": "x",
+                        "binary_code": "c",
+                        "concern": "c",
+                        "system_prompt": "p",
+                        "provider": "ollama",
+                        "model": "m",
+                    }
+                ],
+            },
+        )
+        assert resp.status_code == 422
+
+
+def test_post_rejects_empty_agents_inline(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _clear_state()
+    _setup_env(monkeypatch)
+    monkeypatch.chdir(tmp_path)
+    with TestClient(app) as client:
+        resp = client.post(
+            "/api/simulations",
+            json={
+                "trigger_message": "x",
+                "max_turns": 1,
+                "agents_inline": [],
+            },
+        )
+        assert resp.status_code == 422
+
+
+def test_post_rejects_duplicate_agents_inline(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _clear_state()
+    _setup_env(monkeypatch)
+    monkeypatch.chdir(tmp_path)
+    with TestClient(app) as client:
+        resp = client.post(
+            "/api/simulations",
+            json={
+                "trigger_message": "x",
+                "max_turns": 1,
+                "agents_inline": [
+                    {
+                        "name": "dup",
+                        "binary_code": "c",
+                        "concern": "c",
+                        "system_prompt": "p",
+                        "provider": "ollama",
+                        "model": "m",
+                    },
+                    {
+                        "name": "dup",
+                        "binary_code": "c2",
+                        "concern": "c2",
+                        "system_prompt": "p",
+                        "provider": "ollama",
+                        "model": "m",
+                    },
+                ],
+            },
+        )
+        assert resp.status_code == 422
+
+
+def test_post_rejects_invalid_avatar_hue_in_agents_inline(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _clear_state()
+    _setup_env(monkeypatch)
+    monkeypatch.chdir(tmp_path)
+    with TestClient(app) as client:
+        resp = client.post(
+            "/api/simulations",
+            json={
+                "trigger_message": "x",
+                "max_turns": 1,
+                "agents_inline": [
+                    {
+                        "name": "x",
+                        "binary_code": "c",
+                        "concern": "c",
+                        "system_prompt": "p",
+                        "provider": "ollama",
+                        "model": "m",
+                        "avatar_hue": 400,
+                    }
+                ],
+            },
+        )
+        assert resp.status_code == 422
+
+
 def test_post_failed_status_on_llm_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _clear_state()
     _setup_env(monkeypatch)
@@ -270,6 +375,63 @@ def test_post_agents_preset_5(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
         final = _wait_for_status(client, sim_id, "completed")
         assert final["status"] == "completed"
         assert final["turn_count"] == 5
+
+
+def test_post_agents_inline_starts_simulation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _clear_state()
+    _setup_env(monkeypatch)
+    specs3 = [
+        AgentSpec(
+            name="エージェント1",
+            binary_code="c1",
+            concern="concern1",
+            system_prompt="prompt1",
+            provider="ollama",
+            model="test-model",
+            avatar_hue=120,
+            avatar_glyph="¥",
+        ),
+        AgentSpec(
+            name="エージェント2",
+            binary_code="c2",
+            concern="concern2",
+            system_prompt="prompt2",
+            provider="ollama",
+            model="test-model",
+        ),
+        AgentSpec(
+            name="エージェント3",
+            binary_code="c3",
+            concern="concern3",
+            system_prompt="prompt3",
+            provider="ollama",
+            model="test-model",
+        ),
+    ]
+    clients: dict[str, _DummyLLMClient] = {s.name: _DummyLLMClient(responses=["x"]) for s in specs3}
+
+    def _factory(agents: list[AgentSpec], config: AppConfig) -> dict[str, _DummyLLMClient]:
+        return clients
+
+    monkeypatch.setattr("app.server.build_agent_clients", _factory)
+    monkeypatch.chdir(tmp_path)
+
+    with TestClient(app) as client:
+        resp = client.post(
+            "/api/simulations",
+            json={
+                "trigger_message": "お題",
+                "max_turns": 3,
+                "agents_inline": [s.model_dump(mode="json") for s in specs3],
+            },
+        )
+        assert resp.status_code == 201, resp.text
+        sim_id = resp.json()["simulation_id"]
+        final = _wait_for_status(client, sim_id, "completed")
+        assert final["status"] == "completed"
+        assert final["turn_count"] == 3
 
 
 def test_websocket_push_and_completed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

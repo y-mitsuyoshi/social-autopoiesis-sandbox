@@ -76,6 +76,8 @@ def _fallback_agents(config: AppConfig) -> list[AgentSpec]:
         "ollama": config.ollama_model,
         "gemini": config.gemini_model,
         "openai": config.openai_model,
+        "opencode": config.opencode_model,
+        "opencode-go": config.opencode_go_model,
     }[config.llm_provider]
     if model is None:
         raise ValueError(

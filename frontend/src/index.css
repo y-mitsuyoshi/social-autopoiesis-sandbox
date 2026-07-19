@@ -2,7 +2,141 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+  min-height: 100vh;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #060913;
+  color: #c2f1ff;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(0, 240, 255, 0.1), transparent 60%),
+    radial-gradient(circle at 80% 10%, rgba(255, 157, 0, 0.06), transparent 60%),
+    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    100% 100%,
+    40px 40px,
+    40px 40px;
+  background-attachment: fixed;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 229, 255, 0.04) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  z-index: 1;
+  mix-blend-mode: screen;
+  animation: scanline 8s linear infinite;
+}
+
+@keyframes scanline {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100px;
+  }
+}
+
+@keyframes tl-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes glitch-shift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    text-shadow:
+      0 0 4px rgba(0, 229, 255, 0.7),
+      0 0 12px rgba(0, 229, 255, 0.4);
+  }
+  20% {
+    transform: translate(-1px, 1px);
+    text-shadow:
+      2px 0 rgba(255, 42, 109, 0.7),
+      -2px 0 rgba(57, 255, 20, 0.7);
+  }
+  40% {
+    transform: translate(1px, -1px);
+    text-shadow:
+      -2px 0 rgba(255, 42, 109, 0.7),
+      2px 0 rgba(57, 255, 20, 0.7);
+  }
+  60% {
+    transform: translate(0, 0);
+    text-shadow:
+      0 0 8px rgba(0, 229, 255, 0.9),
+      0 0 20px rgba(0, 229, 255, 0.5);
+  }
+}
+
+.glitch-text {
+  animation: glitch-shift 2.4s infinite steps(8, end);
+}
+
+.neon-glow {
+  text-shadow:
+    0 0 4px rgba(0, 229, 255, 0.8),
+    0 0 12px rgba(0, 229, 255, 0.5);
+}
+
+.hud-panel {
+  position: relative;
+  background-color: rgba(9, 15, 30, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  box-shadow:
+    0 0 15px rgba(0, 240, 255, 0.05) inset,
+    0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.hud-panel::before,
+.hud-panel::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: #ff9d00;
+  border-style: solid;
+  border-width: 0;
+}
+
+.hud-panel::before {
+  top: -2px;
+  left: -2px;
+  border-top-width: 3px;
+  border-left-width: 3px;
+}
+
+.hud-panel::after {
+  bottom: -2px;
+  right: -2px;
+  border-bottom-width: 3px;
+  border-right-width: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before,
+  .glitch-text {
+    animation: none;
+  }
 }

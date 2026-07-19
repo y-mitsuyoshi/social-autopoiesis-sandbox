@@ -37,6 +37,29 @@ def validate_agent_credentials(agents: list[AgentSpec], config: AppConfig) -> No
                     f"エージェント『{agent.name}』が provider=openai を指定していますが、"
                     f"OPENAI_BASE_URL が未設定です"
                 )
+        elif agent.provider == "opencode":
+            if config.opencode_api_key is None:
+                raise ValueError(
+                    f"エージェント『{agent.name}』が provider=opencode を指定していますが、"
+                    f"OPENCODE_API_KEY が未設定です"
+                )
+            if config.opencode_base_url is None:
+                raise ValueError(
+                    f"エージェント『{agent.name}』が provider=opencode を指定していますが、"
+                    f"OPENCODE_BASE_URL が未設定です"
+                )
+        elif agent.provider == "opencode-go":
+            effective_key = config.opencode_go_api_key or config.opencode_api_key
+            if effective_key is None:
+                raise ValueError(
+                    f"エージェント『{agent.name}』が provider=opencode-go を指定していますが、"
+                    f"OPENCODE_GO_API_KEY も OPENCODE_API_KEY も未設定です"
+                )
+            if config.opencode_go_base_url is None:
+                raise ValueError(
+                    f"エージェント『{agent.name}』が provider=opencode-go を指定していますが、"
+                    f"OPENCODE_GO_BASE_URL が未設定です"
+                )
 
 
 def validate_dynamic_order(agents: list[AgentSpec], sim_config: SimulationConfig) -> None:

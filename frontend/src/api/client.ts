@@ -1,12 +1,6 @@
-import type { Message, SimulationStartResponse } from "../types";
+import type { Message, SimulationStartResponse, StartSimulationParams } from "../types";
 
-export interface StartSimulationParams {
-  trigger_message: string;
-  max_turns: number;
-  agents_config?: string;
-  agent_order_mode?: "fixed" | "dynamic";
-  history_length?: number;
-}
+export type { StartSimulationParams };
 
 export async function startSimulation(
   params: StartSimulationParams,
@@ -17,9 +11,60 @@ export async function startSimulation(
     body: JSON.stringify(params),
   });
   if (!resp.ok) {
-    throw new Error(`start_simulation failed: ${resp.status}`);
+    let errorDetail = "";
+    try {
+      const errData = await resp.json();
+      if (errData && errData.detail) {
+        if (typeof errData.detail === "string") {
+          errorDetail = errData.detail;
+        } else if (Array.isArray(errData.detail)) {
+          errorDetail = errData.detail
+            .map((d: unknown) => {
+              if (d && typeof d === "object" && "msg" in d) {
+                return String((d as Record<string, unknown>).msg);
+              }
+              return JSON.stringify(d);
+            })
+            .join(", ");
+        } else {
+          errorDetail = JSON.stringify(errData.detail);
+        }
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
+    throw new Error(
+      errorDetail
+        ? `start_simulation failed: ${resp.status} (${errorDetail})`
+        : `start_simulation failed: ${resp.status}`
+    );
   }
   return (await resp.json()) as SimulationStartResponse;
+}
+
+export async function fetchSimulationLogs(
+  simulationId: string,
+): Promise<Message[]> {
+  const resp = await fetch(
+    `/api/simulations/${encodeURIComponent(simulationId)}/logs`,
+  );
+  if (!resp.ok) {
+    let errorDetail = "";
+    try {
+      const errData = await resp.json();
+      if (errData && errData.detail) {
+        errorDetail = typeof errData.detail === "string" ? errData.detail : JSON.stringify(errData.detail);
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
+    throw new Error(
+      errorDetail
+        ? `fetch_logs failed: ${resp.status} (${errorDetail})`
+        : `fetch_logs failed: ${resp.status}`
+    );
+  }
+  return (await resp.json()) as Message[];
 }
 
 export function openSimulationSocket(

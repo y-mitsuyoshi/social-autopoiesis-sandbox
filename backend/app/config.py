@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from app.schemas import AppConfig
 
-_SUPPORTED_PROVIDERS = {"ollama", "gemini", "openai"}
+_SUPPORTED_PROVIDERS = {"ollama", "gemini", "openai", "opencode", "opencode-go"}
 
 
 def _parse_order_mode(raw: str | None) -> Literal["fixed", "dynamic"]:
@@ -66,6 +66,12 @@ def load_config() -> AppConfig:
             openai_api_key=os.environ.get("OPENAI_API_KEY") or None,
             openai_base_url=os.environ.get("OPENAI_BASE_URL") or None,
             openai_model=os.environ.get("OPENAI_MODEL") or None,
+            opencode_api_key=os.environ.get("OPENCODE_API_KEY") or None,
+            opencode_base_url=os.environ.get("OPENCODE_BASE_URL") or None,
+            opencode_model=os.environ.get("OPENCODE_MODEL") or None,
+            opencode_go_api_key=os.environ.get("OPENCODE_GO_API_KEY") or None,
+            opencode_go_base_url=os.environ.get("OPENCODE_GO_BASE_URL") or None,
+            opencode_go_model=os.environ.get("OPENCODE_GO_MODEL") or None,
         )
     except ValidationError as exc:
         raise ValueError(f"Invalid configuration: {exc}") from exc

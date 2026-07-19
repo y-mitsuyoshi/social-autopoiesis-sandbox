@@ -56,7 +56,20 @@ else
   fi
 fi
 
-if command -v ruff &>/dev/null || run_py command -v ruff &>/dev/null 2>&1; then
+has_tool() {
+  local tool="$1"
+  if resolve_use_docker; then
+    docker compose -f "${WORKSPACE_DIR}/${COMPOSE_FILE}" exec -T backend sh -c "command -v $tool" &>/dev/null
+  else
+    if [[ -d "${WORKSPACE_DIR}/.venv" ]]; then
+      [[ -x "${WORKSPACE_DIR}/.venv/bin/$tool" ]]
+    else
+      command -v "$tool" &>/dev/null
+    fi
+  fi
+}
+
+if has_tool ruff; then
   echo "-> フォーマットチェック (ruff format --check)..."
   run_py ruff format . --check || { echo -e "${RED}エラー: ruff format に失敗${NC}"; exit 1; }
 
@@ -66,7 +79,7 @@ else
   echo -e "${YELLOW}注意: ruff が見つかりません。スキップします。${NC}"
 fi
 
-if command -v mypy &>/dev/null || run_py command -v mypy &>/dev/null 2>&1; then
+if has_tool mypy; then
   echo "-> 型チェック (mypy)..."
   if [[ -f "${WORKSPACE_DIR}/.venv/bin/python" ]]; then
     run_py mypy --python-executable="${WORKSPACE_DIR}/.venv/bin/python" . || { echo -e "${RED}エラー: mypy に失敗${NC}"; exit 1; }
@@ -77,7 +90,7 @@ else
   echo -e "${YELLOW}注意: mypy が見つかりません。スキップします。${NC}"
 fi
 
-if command -v pytest &>/dev/null || run_py command -v pytest &>/dev/null 2>&1; then
+if has_tool pytest; then
   echo "-> テスト実行 (pytest)..."
   run_py pytest -q || { echo -e "${RED}エラー: pytest に失敗${NC}"; exit 1; }
 else

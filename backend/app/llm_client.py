@@ -10,9 +10,23 @@ from app.schemas import AgentSpec, AppConfig, LLMResponse
 
 class LLMError(Exception):
     def __init__(self, message: str, cause: BaseException | None = None) -> None:
-        super().__init__(message)
-        self.message = message
         self.cause = cause
+        if cause is not None:
+            cause_msg = str(cause)
+            if isinstance(cause, httpx.HTTPStatusError):
+                try:
+                    response_text = cause.response.text
+                    if response_text:
+                        if len(response_text) > 300:
+                            response_text = response_text[:300] + "..."
+                        cause_msg += f" - Response: {response_text}"
+                except Exception:
+                    pass
+            full_message = f"{message} (Cause: {cause_msg})"
+        else:
+            full_message = message
+        super().__init__(full_message)
+        self.message = full_message
 
 
 class LLMClient(Protocol):
@@ -41,7 +55,7 @@ async def retry_async(
             delay = base_delay * (2 ** (attempt - 1))
             await asyncio.sleep(delay)
     assert last_exc is not None
-    raise LLMError(f"LLM request failed after {max_attempts} attempts", last_exc)
+    raise LLMError(f"LLM request failed after {max_attempts} attempts", last_exc) from last_exc
 
 
 class OpenAICompatibleClient:
@@ -205,6 +219,25 @@ def _build_single_client(provider: str, model: str, config: AppConfig) -> LLMCli
             raise LLMError("gemini credentials are not configured")
         base_url = config.gemini_base_url or "https://generativelanguage.googleapis.com"
         return GeminiClient(model=model, api_key=config.gemini_api_key, base_url=base_url)
+    if provider == "opencode":
+        if config.opencode_api_key is None or config.opencode_base_url is None:
+            raise LLMError("opencode credentials are not configured")
+        return OpenAICompatibleClient(
+            provider="opencode",
+            model=model,
+            api_key=config.opencode_api_key,
+            base_url=config.opencode_base_url,
+        )
+    if provider == "opencode-go":
+        effective_key = config.opencode_go_api_key or config.opencode_api_key
+        if effective_key is None or config.opencode_go_base_url is None:
+            raise LLMError("opencode-go credentials are not configured")
+        return OpenAICompatibleClient(
+            provider="opencode-go",
+            model=model,
+            api_key=effective_key,
+            base_url=config.opencode_go_base_url,
+        )
     raise LLMError(f"Unsupported provider: {provider}")
 
 
@@ -273,5 +306,32 @@ def build_llm_client(config: AppConfig) -> LLMClient:
             model=config.gemini_model,
             api_key=config.gemini_api_key,
             base_url=config.gemini_base_url,
+        )
+    if config.llm_provider == "opencode":
+        if (
+            config.opencode_api_key is None
+            or config.opencode_model is None
+            or config.opencode_base_url is None
+        ):
+            raise LLMError("opencode credentials are not configured")
+        return OpenAICompatibleClient(
+            provider="opencode",
+            model=config.opencode_model,
+            api_key=config.opencode_api_key,
+            base_url=config.opencode_base_url,
+        )
+    if config.llm_provider == "opencode-go":
+        effective_key = config.opencode_go_api_key or config.opencode_api_key
+        if (
+            effective_key is None
+            or config.opencode_go_model is None
+            or config.opencode_go_base_url is None
+        ):
+            raise LLMError("opencode-go credentials are not configured")
+        return OpenAICompatibleClient(
+            provider="opencode-go",
+            model=config.opencode_go_model,
+            api_key=effective_key,
+            base_url=config.opencode_go_base_url,
         )
     raise LLMError(f"Unsupported provider: {config.llm_provider}")

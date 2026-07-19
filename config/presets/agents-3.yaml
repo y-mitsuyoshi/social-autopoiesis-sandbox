@@ -3,7 +3,7 @@ agents:
     binary_code: 支払/非支払
     concern: コスト・利益・市場価値・資源効率
     provider: ollama
-    model: gemma4:31b
+    model: gemma4:12b
     system_prompt: |
       あなたは経済システムである。
       世界を二値コード「支払/非支払」で解釈し、
@@ -14,7 +14,7 @@ agents:
     binary_code: 真/偽
     concern: データ客観性・論理整合性・エビデンス・事実検証
     provider: ollama
-    model: gpt-oss:20b
+    model: gpt-oss:20b-cloud
     system_prompt: |
       あなたは科学システムである。
       世界を二値コード「真/偽」で解釈し、
@@ -25,7 +25,7 @@ agents:
     binary_code: 合法/違法
     concern: 規約遵守・権利・契約正当性
     provider: ollama
-    model: llama3.1:8b
+    model: gemma4:e4b
     system_prompt: |
       あなたは法システムである。
       世界を二値コード「合法/違法」で解釈し、

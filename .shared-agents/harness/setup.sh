@@ -157,9 +157,10 @@ if [[ -d "${REPO_ROOT}/.git" ]]; then
   echo "-> Git pre-commit フックをインストール中..."
   readonly PRE_COMMIT="${REPO_ROOT}/.git/hooks/pre-commit"
   cat << 'EOF' > "$PRE_COMMIT"
-#!/usr/bin/env bash
+#!/bin/sh
 # Git pre-commit フック — コミット前に自動的に検証を実行します。
-set -euo pipefail
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
 echo "=== [Git Pre-commit Hook] 検証スクリプトを実行中... ==="
 ./.shared-agents/harness/verify.sh
 EOF

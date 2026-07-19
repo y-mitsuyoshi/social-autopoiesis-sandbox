@@ -45,6 +45,35 @@ def _gemini_config() -> AppConfig:
     )
 
 
+def _opencode_config() -> AppConfig:
+    return AppConfig(
+        llm_provider="opencode",
+        max_turns=3,
+        opencode_api_key="test-key",
+        opencode_base_url="https://opencode.ai/zen/v1",
+        opencode_model="deepseek-v4-flash-free",
+    )
+
+
+def _opencode_go_config() -> AppConfig:
+    return AppConfig(
+        llm_provider="opencode-go",
+        max_turns=3,
+        opencode_go_api_key="go-test-key",
+        opencode_go_base_url="https://opencode.ai/zen/go/v1",
+        opencode_go_model="deepseek-v4-pro",
+    )
+
+
+def _opencode_go_fallback_config() -> AppConfig:
+    return AppConfig(
+        llm_provider="opencode-go",
+        max_turns=3,
+        opencode_api_key="shared-key",
+        opencode_go_model="deepseek-v4-pro",
+    )
+
+
 @respx.mock
 async def test_openai_compatible_success() -> None:
     route = respx.post("https://openai.viloads.com/v1/chat/completions")
@@ -197,6 +226,24 @@ def test_build_llm_client_openai() -> None:
 def test_build_llm_client_gemini() -> None:
     c = build_llm_client(_gemini_config())
     assert isinstance(c, GeminiClient)
+
+
+def test_build_llm_client_opencode() -> None:
+    c = build_llm_client(_opencode_config())
+    assert isinstance(c, OpenAICompatibleClient)
+    assert c.provider == "opencode"
+
+
+def test_build_llm_client_opencode_go() -> None:
+    c = build_llm_client(_opencode_go_config())
+    assert isinstance(c, OpenAICompatibleClient)
+    assert c.provider == "opencode-go"
+
+
+def test_build_llm_client_opencode_go_fallback_key() -> None:
+    c = build_llm_client(_opencode_go_fallback_config())
+    assert isinstance(c, OpenAICompatibleClient)
+    assert c.provider == "opencode-go"
 
 
 def test_build_llm_client_invalid_provider_raises() -> None:

@@ -8,12 +8,14 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import ValidationError
 
 from app.agents import load_agents
 from app.config import load_config
 from app.llm_client import LLMClient, LLMError, build_agent_clients, close_all_clients
 from app.logger import SimulationLogger
 from app.schemas import (
+    AgentConfigFile,
     AgentSpec,
     Message,
     SimulationConfig,
@@ -55,21 +57,30 @@ def _generate_simulation_id() -> str:
     description="バックグラウンドでシミュレーションを開始し、ID と running 状態を返す。",
 )
 async def start_simulation(request: SimulationStartRequest) -> JSONResponse:
-    if request.agents_config is not None and ".." in request.agents_config:
-        raise HTTPException(
-            status_code=422,
-            detail="agents_config must not contain '..'",
-        )
     try:
         app_config = load_config()
     except ValueError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     agents: list[AgentSpec]
-    try:
-        agents, _ = load_agents(request.agents_config or app_config.agents_config, app_config)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if request.agents_inline is not None:
+        try:
+            file_model = AgentConfigFile.model_validate(
+                {"agents": [a.model_dump() for a in request.agents_inline]}
+            )
+        except ValidationError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        agents = file_model.agents
+    else:
+        if request.agents_config is not None and ".." in request.agents_config:
+            raise HTTPException(
+                status_code=422,
+                detail="agents_config must not contain '..'",
+            )
+        try:
+            agents, _ = load_agents(request.agents_config or app_config.agents_config, app_config)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     try:
         validate_agent_credentials(agents, app_config)
@@ -278,6 +289,9 @@ async def run_simulation_task(
                 state.turn_count = logger.turn_count
         await logger.broadcast_event(WebSocketEvent(event="completed"))
     except Exception as exc:
+        import traceback
+
+        traceback.print_exc()
         error_msg = exc.message if isinstance(exc, LLMError) else str(exc)
         async with _lock:
             state = _simulations.get(simulation_id)

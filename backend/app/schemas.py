@@ -9,9 +9,11 @@ class AgentSpec(BaseModel):
     binary_code: str
     concern: str
     system_prompt: str
-    provider: Literal["ollama", "gemini", "openai"]
+    provider: Literal["ollama", "gemini", "openai", "opencode", "opencode-go"]
     model: str
     is_meta: bool = False
+    avatar_hue: int | None = Field(default=None, ge=0, le=359)
+    avatar_glyph: str | None = None
 
     @field_validator("name")
     @classmethod
@@ -75,7 +77,7 @@ class LLMResponse(BaseModel):
 
 
 class AppConfig(BaseModel):
-    llm_provider: Literal["ollama", "gemini", "openai"]
+    llm_provider: Literal["ollama", "gemini", "openai", "opencode", "opencode-go"]
     max_turns: int = Field(ge=0)
     agents_config: str | None = None
     agent_order_mode: Literal["fixed", "dynamic"] = "fixed"
@@ -90,6 +92,12 @@ class AppConfig(BaseModel):
     openai_api_key: str | None = None
     openai_base_url: str | None = None
     openai_model: str | None = None
+    opencode_api_key: str | None = None
+    opencode_base_url: str | None = None
+    opencode_model: str | None = None
+    opencode_go_api_key: str | None = None
+    opencode_go_base_url: str | None = None
+    opencode_go_model: str | None = None
 
     @model_validator(mode="after")
     def validate_provider_credentials(self) -> "AppConfig":
@@ -109,6 +117,23 @@ class AppConfig(BaseModel):
                     raise ValueError("OPENAI_API_KEY is required when LLM_PROVIDER=openai")
                 if self.openai_base_url is None:
                     self.openai_base_url = "https://api.openai.com/v1"
+            elif self.llm_provider == "opencode":
+                if not self.opencode_api_key:
+                    raise ValueError("OPENCODE_API_KEY is required when LLM_PROVIDER=opencode")
+                if self.opencode_base_url is None:
+                    self.opencode_base_url = "https://opencode.ai/zen/v1"
+            elif self.llm_provider == "opencode-go":
+                # opencode-go falls back to OPENCODE_API_KEY if its own key is unset
+                effective_key = self.opencode_go_api_key or self.opencode_api_key
+                if not effective_key:
+                    raise ValueError(
+                        "OPENCODE_GO_API_KEY (or OPENCODE_API_KEY) is required "
+                        "when LLM_PROVIDER=opencode-go"
+                    )
+                if self.opencode_go_api_key is None:
+                    self.opencode_go_api_key = self.opencode_api_key
+                if self.opencode_go_base_url is None:
+                    self.opencode_go_base_url = "https://opencode.ai/zen/go/v1"
             return self
 
         if self.llm_provider == "ollama":
@@ -135,6 +160,27 @@ class AppConfig(BaseModel):
                 raise ValueError("OPENAI_MODEL is required when LLM_PROVIDER=openai")
             if self.openai_base_url is None:
                 self.openai_base_url = "https://api.openai.com/v1"
+        elif self.llm_provider == "opencode":
+            if not self.opencode_api_key:
+                raise ValueError("OPENCODE_API_KEY is required when LLM_PROVIDER=opencode")
+            if not self.opencode_model:
+                raise ValueError("OPENCODE_MODEL is required when LLM_PROVIDER=opencode")
+            if self.opencode_base_url is None:
+                self.opencode_base_url = "https://opencode.ai/zen/v1"
+        elif self.llm_provider == "opencode-go":
+            # opencode-go falls back to OPENCODE_API_KEY if its own key is unset
+            effective_key = self.opencode_go_api_key or self.opencode_api_key
+            if not effective_key:
+                raise ValueError(
+                    "OPENCODE_GO_API_KEY (or OPENCODE_API_KEY) is required "
+                    "when LLM_PROVIDER=opencode-go"
+                )
+            if self.opencode_go_api_key is None:
+                self.opencode_go_api_key = self.opencode_api_key
+            if not self.opencode_go_model:
+                raise ValueError("OPENCODE_GO_MODEL is required when LLM_PROVIDER=opencode-go")
+            if self.opencode_go_base_url is None:
+                self.opencode_go_base_url = "https://opencode.ai/zen/go/v1"
         return self
 
 
@@ -142,8 +188,15 @@ class SimulationStartRequest(BaseModel):
     trigger_message: str
     max_turns: int = Field(ge=0)
     agents_config: str | None = None
+    agents_inline: list[AgentSpec] | None = None
     agent_order_mode: Literal["fixed", "dynamic"] | None = None
     history_length: int | None = None
+
+    @model_validator(mode="after")
+    def validate_exclusive_agents_source(self) -> "SimulationStartRequest":
+        if self.agents_config is not None and self.agents_inline is not None:
+            raise ValueError("agents_config and agents_inline are mutually exclusive")
+        return self
 
 
 class SimulationStartResponse(BaseModel):

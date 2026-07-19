@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 import pytest
-from app.schemas import Message, SimulationConfig
+from app.schemas import AgentSpec, Message, SimulationConfig, SimulationStartRequest
 from pydantic import ValidationError
 
 
@@ -58,3 +58,76 @@ def test_message_explicit_timestamp_preserved() -> None:
         model="x",
     )
     assert msg.timestamp == ts
+
+
+def test_agent_spec_avatar_hue_range_enforced() -> None:
+    with pytest.raises(ValidationError):
+        AgentSpec(
+            name="x",
+            binary_code="c",
+            concern="c",
+            system_prompt="p",
+            provider="ollama",
+            model="m",
+            avatar_hue=400,
+        )
+    with pytest.raises(ValidationError):
+        AgentSpec(
+            name="x",
+            binary_code="c",
+            concern="c",
+            system_prompt="p",
+            provider="ollama",
+            model="m",
+            avatar_hue=-1,
+        )
+    a = AgentSpec(
+        name="x",
+        binary_code="c",
+        concern="c",
+        system_prompt="p",
+        provider="ollama",
+        model="m",
+        avatar_hue=120,
+        avatar_glyph="¥",
+    )
+    assert a.avatar_hue == 120
+    assert a.avatar_glyph == "¥"
+
+
+def test_simulation_start_request_rejects_dual_agent_source() -> None:
+    with pytest.raises(ValidationError, match="mutually exclusive"):
+        SimulationStartRequest(
+            trigger_message="x",
+            max_turns=1,
+            agents_config="config/presets/agents-3.yaml",
+            agents_inline=[
+                AgentSpec(
+                    name="x",
+                    binary_code="c",
+                    concern="c",
+                    system_prompt="p",
+                    provider="ollama",
+                    model="m",
+                )
+            ],
+        )
+
+
+def test_simulation_start_request_accepts_agents_inline_only() -> None:
+    req = SimulationStartRequest(
+        trigger_message="x",
+        max_turns=1,
+        agents_inline=[
+            AgentSpec(
+                name="x",
+                binary_code="c",
+                concern="c",
+                system_prompt="p",
+                provider="ollama",
+                model="m",
+            )
+        ],
+    )
+    assert req.agents_inline is not None
+    assert req.agents_config is None
