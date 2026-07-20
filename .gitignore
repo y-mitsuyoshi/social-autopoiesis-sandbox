@@ -242,3 +242,11 @@ logs/
 
 # Agent audit / verdict reports (ephemeral run artifacts)
 audit_verdict.md
+
+# Agent-generated project management documents (not source truth)
+PROJECT.md
+TEST_INFRA.md
+TEST_READY.md
+
+# TypeScript build cache (generated, not source)
+*.tsbuildinfo
