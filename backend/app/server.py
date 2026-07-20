@@ -87,9 +87,13 @@ async def start_simulation(request: SimulationStartRequest) -> JSONResponse:
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    active_config = app_config
+    if request.llm_timeout is not None:
+        active_config = app_config.model_copy(update={"llm_timeout": request.llm_timeout})
+
     clients: dict[str, LLMClient]
     try:
-        clients = build_agent_clients(agents, app_config)
+        clients = build_agent_clients(agents, active_config)
     except LLMError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -102,6 +106,7 @@ async def start_simulation(request: SimulationStartRequest) -> JSONResponse:
         agent_order=[a.name for a in agents],
         agent_order_mode=order_mode,
         history_length=history_length,
+        llm_timeout=active_config.llm_timeout,
     )
     try:
         validate_dynamic_order(agents, sim_config)

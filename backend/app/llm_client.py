@@ -65,13 +65,14 @@ class OpenAICompatibleClient:
         model: str,
         api_key: str,
         base_url: str,
+        timeout: float = 120.0,
     ) -> None:
         self._provider = provider
         self._model = model
         self._client = httpx.AsyncClient(
             base_url=base_url,
             headers={"Authorization": f"Bearer {api_key}"},
-            timeout=60.0,
+            timeout=timeout,
         )
 
     @property
@@ -137,11 +138,12 @@ class GeminiClient:
         model: str,
         api_key: str,
         base_url: str,
+        timeout: float = 120.0,
     ) -> None:
         self._model = model
         self._base_url = base_url.rstrip("/")
         self._client = httpx.AsyncClient(
-            timeout=60.0,
+            timeout=timeout,
             headers={"x-goog-api-key": api_key},
         )
 
@@ -204,6 +206,7 @@ def _build_single_client(provider: str, model: str, config: AppConfig) -> LLMCli
             model=model,
             api_key=config.ollama_api_key,
             base_url=config.ollama_base_url,
+            timeout=config.llm_timeout,
         )
     if provider == "openai":
         if config.openai_api_key is None or config.openai_base_url is None:
@@ -213,12 +216,18 @@ def _build_single_client(provider: str, model: str, config: AppConfig) -> LLMCli
             model=model,
             api_key=config.openai_api_key,
             base_url=config.openai_base_url,
+            timeout=config.llm_timeout,
         )
     if provider == "gemini":
         if config.gemini_api_key is None:
             raise LLMError("gemini credentials are not configured")
         base_url = config.gemini_base_url or "https://generativelanguage.googleapis.com"
-        return GeminiClient(model=model, api_key=config.gemini_api_key, base_url=base_url)
+        return GeminiClient(
+            model=model,
+            api_key=config.gemini_api_key,
+            base_url=base_url,
+            timeout=config.llm_timeout,
+        )
     if provider == "opencode":
         if config.opencode_api_key is None or config.opencode_base_url is None:
             raise LLMError("opencode credentials are not configured")
@@ -227,6 +236,7 @@ def _build_single_client(provider: str, model: str, config: AppConfig) -> LLMCli
             model=model,
             api_key=config.opencode_api_key,
             base_url=config.opencode_base_url,
+            timeout=config.llm_timeout,
         )
     if provider == "opencode-go":
         effective_key = config.opencode_go_api_key or config.opencode_api_key
@@ -237,6 +247,7 @@ def _build_single_client(provider: str, model: str, config: AppConfig) -> LLMCli
             model=model,
             api_key=effective_key,
             base_url=config.opencode_go_base_url,
+            timeout=config.llm_timeout,
         )
     raise LLMError(f"Unsupported provider: {provider}")
 
@@ -281,6 +292,7 @@ def build_llm_client(config: AppConfig) -> LLMClient:
             model=config.ollama_model,
             api_key=config.ollama_api_key,
             base_url=config.ollama_base_url,
+            timeout=config.llm_timeout,
         )
     if config.llm_provider == "openai":
         if (
@@ -294,6 +306,7 @@ def build_llm_client(config: AppConfig) -> LLMClient:
             model=config.openai_model,
             api_key=config.openai_api_key,
             base_url=config.openai_base_url,
+            timeout=config.llm_timeout,
         )
     if config.llm_provider == "gemini":
         if (
@@ -306,6 +319,7 @@ def build_llm_client(config: AppConfig) -> LLMClient:
             model=config.gemini_model,
             api_key=config.gemini_api_key,
             base_url=config.gemini_base_url,
+            timeout=config.llm_timeout,
         )
     if config.llm_provider == "opencode":
         if (
@@ -319,6 +333,7 @@ def build_llm_client(config: AppConfig) -> LLMClient:
             model=config.opencode_model,
             api_key=config.opencode_api_key,
             base_url=config.opencode_base_url,
+            timeout=config.llm_timeout,
         )
     if config.llm_provider == "opencode-go":
         effective_key = config.opencode_go_api_key or config.opencode_api_key
@@ -333,5 +348,6 @@ def build_llm_client(config: AppConfig) -> LLMClient:
             model=config.opencode_go_model,
             api_key=effective_key,
             base_url=config.opencode_go_base_url,
+            timeout=config.llm_timeout,
         )
     raise LLMError(f"Unsupported provider: {config.llm_provider}")

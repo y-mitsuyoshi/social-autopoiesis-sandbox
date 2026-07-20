@@ -48,7 +48,14 @@ const agents: Record<string, AgentNode> = {
 describe("TimelineList", () => {
   it("renders all messages in order", () => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
-    render(<TimelineList messages={messages} agents={agents} zoom="M" />);
+    render(
+      <TimelineList
+        messages={messages}
+        agents={agents}
+        zoom="M"
+        currentSpeaker="経済システム"
+      />,
+    );
     expect(screen.getByText("発言0")).toBeInTheDocument();
     expect(screen.getByText("発言1")).toBeInTheDocument();
   });
@@ -56,7 +63,14 @@ describe("TimelineList", () => {
   it("renders timeline dots (role=tab) that trigger scroll on click", () => {
     const scrollIntoViewMock = vi.fn();
     window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
-    render(<TimelineList messages={messages} agents={agents} zoom="M" />);
+    render(
+      <TimelineList
+        messages={messages}
+        agents={agents}
+        zoom="M"
+        currentSpeaker="経済システム"
+      />,
+    );
     const tabs = screen.getAllByRole("tab");
     expect(tabs.length).toBeGreaterThanOrEqual(2);
     fireEvent.click(tabs[0]);
@@ -66,11 +80,16 @@ describe("TimelineList", () => {
   it("applies zoom S font size via container style", () => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
     const { container } = render(
-      <TimelineList messages={messages} agents={agents} zoom="S" />
+      <TimelineList
+        messages={messages}
+        agents={agents}
+        zoom="S"
+        currentSpeaker="経済システム"
+      />,
     );
     const outer = container.firstChild as HTMLElement;
     expect(outer).toBeTruthy();
-    expect(outer.style.fontSize).toContain("11");
+    expect(outer.style.fontSize).toContain("14");
   });
 
   it("shows placeholder when no messages", () => {

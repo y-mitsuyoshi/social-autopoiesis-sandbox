@@ -266,3 +266,80 @@ def test_load_config_opencode_go_fallback_key(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setenv("OPENCODE_GO_MODEL", "deepseek-v4-pro")
     cfg = load_config()
     assert cfg.opencode_go_api_key == "shared-key"
+
+
+def test_load_config_ollama_mode_cloud(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "ollama")
+    monkeypatch.setenv("MAX_TURNS", "5")
+    monkeypatch.setenv("OLLAMA_MODE", "cloud")
+    monkeypatch.setenv("OLLAMA_CLOUD_API_KEY", "cloud-key")
+    monkeypatch.setenv("OLLAMA_CLOUD_MODEL", "gpt-oss:120b")
+    monkeypatch.delenv("OLLAMA_CLOUD_BASE_URL", raising=False)
+    monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
+    monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
+    monkeypatch.delenv("OLLAMA_MODEL", raising=False)
+    cfg = load_config()
+    assert cfg.ollama_mode == "cloud"
+    assert cfg.ollama_api_key == "cloud-key"
+    assert cfg.ollama_base_url == "https://ollama.com/v1"
+    assert cfg.ollama_model == "gpt-oss:120b"
+    assert cfg.ollama_cloud_api_key == "cloud-key"
+    assert cfg.ollama_cloud_base_url == "https://ollama.com/v1"
+    assert cfg.ollama_cloud_model == "gpt-oss:120b"
+
+
+def test_load_config_ollama_mode_local(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "ollama")
+    monkeypatch.setenv("MAX_TURNS", "5")
+    monkeypatch.setenv("OLLAMA_MODE", "local")
+    monkeypatch.setenv("OLLAMA_LOCAL_MODEL", "llama3.1:8b")
+    monkeypatch.delenv("OLLAMA_LOCAL_BASE_URL", raising=False)
+    monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
+    monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
+    monkeypatch.delenv("OLLAMA_MODEL", raising=False)
+    cfg = load_config()
+    assert cfg.ollama_mode == "local"
+    assert cfg.ollama_api_key == "local"
+    assert cfg.ollama_base_url == "http://localhost:11434/v1"
+    assert cfg.ollama_model == "llama3.1:8b"
+    assert cfg.ollama_local_base_url == "http://localhost:11434/v1"
+    assert cfg.ollama_local_model == "llama3.1:8b"
+
+
+def test_load_config_ollama_mode_cloud_missing_api_key_fails_fast(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "ollama")
+    monkeypatch.setenv("MAX_TURNS", "5")
+    monkeypatch.setenv("OLLAMA_MODE", "cloud")
+    monkeypatch.setenv("OLLAMA_CLOUD_MODEL", "gpt-oss:120b")
+    monkeypatch.delenv("OLLAMA_CLOUD_API_KEY", raising=False)
+    with pytest.raises((ValueError, ValidationError)):
+        load_config()
+
+
+def test_load_config_ollama_mode_local_missing_model_fails_fast(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "ollama")
+    monkeypatch.setenv("MAX_TURNS", "5")
+    monkeypatch.setenv("OLLAMA_MODE", "local")
+    monkeypatch.delenv("OLLAMA_LOCAL_MODEL", raising=False)
+    with pytest.raises((ValueError, ValidationError)):
+        load_config()
+
+
+def test_load_config_ollama_mode_unset_falls_back_to_legacy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "ollama")
+    monkeypatch.setenv("MAX_TURNS", "5")
+    monkeypatch.delenv("OLLAMA_MODE", raising=False)
+    monkeypatch.setenv("OLLAMA_API_KEY", "legacy-key")
+    monkeypatch.setenv("OLLAMA_BASE_URL", "https://legacy.example/v1")
+    monkeypatch.setenv("OLLAMA_MODEL", "legacy-model")
+    cfg = load_config()
+    assert cfg.ollama_mode is None
+    assert cfg.ollama_api_key == "legacy-key"
+    assert cfg.ollama_base_url == "https://legacy.example/v1"
+    assert cfg.ollama_model == "legacy-model"

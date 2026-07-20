@@ -15,7 +15,7 @@ export function StatsPanel({ stats, status, agents = {} }: StatsPanelProps) {
   return (
     <section className="hud-panel rounded p-3" aria-label="stats-panel">
       <h2 className="mb-2 text-xs text-cyberpunk-neon neon-glow">STATS</h2>
-      <dl className="grid grid-cols-2 gap-2 text-[11px]">
+      <dl className="grid grid-cols-2 gap-2 text-sm">
         <div>
           <dt className="text-cyberpunk-text/60">TURN</dt>
           <dd className="tabular-nums text-cyberpunk-accent">
@@ -40,7 +40,7 @@ export function StatsPanel({ stats, status, agents = {} }: StatsPanelProps) {
         </div>
       </dl>
       <div className="mt-3">
-        <h3 className="mb-1 text-[10px] text-cyberpunk-text/60">
+        <h3 className="mb-1 text-sm text-cyberpunk-text/60">
           AGENT SPEAK COUNT
         </h3>
         <ul className="space-y-1">
@@ -49,7 +49,7 @@ export function StatsPanel({ stats, status, agents = {} }: StatsPanelProps) {
             const hue = a?.avatarHue ?? hashHue(a?.binaryCode ?? name);
             return (
               <li key={name} className="flex items-center gap-2">
-                <span className="w-24 truncate text-[10px] text-cyberpunk-text/80">
+                <span className="w-24 truncate text-sm text-cyberpunk-text/80">
                   {name}
                 </span>
                 <div className="h-2 flex-1 border border-cyberpunk-neon/30 bg-cyberpunk-bg">
@@ -61,20 +61,20 @@ export function StatsPanel({ stats, status, agents = {} }: StatsPanelProps) {
                     }}
                   />
                 </div>
-                <span className="w-6 text-right text-[10px] tabular-nums text-cyberpunk-accent">
+                <span className="w-6 text-right text-sm tabular-nums text-cyberpunk-accent">
                   {count}
                 </span>
               </li>
             );
           })}
           {entries.length === 0 && (
-            <li className="text-[10px] text-cyberpunk-text/40">no data</li>
+            <li className="text-sm text-cyberpunk-text/40">no data</li>
           )}
         </ul>
       </div>
       <div className="mt-3">
-        <h3 className="mb-1 text-[10px] text-cyberpunk-text/60">PROVIDERS</h3>
-        <ul className="space-y-0.5 text-[10px] text-cyberpunk-text/80">
+        <h3 className="mb-1 text-sm text-cyberpunk-text/60">PROVIDERS</h3>
+        <ul className="space-y-0.5 text-sm text-cyberpunk-text/80">
           {stats.providers.map((p) => (
             <li key={`${p.provider}/${p.model}`}>
               {p.provider}/{p.model}

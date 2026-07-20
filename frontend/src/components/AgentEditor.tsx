@@ -43,7 +43,7 @@ export function AgentEditor({
   onPresetNameChange,
 }: AgentEditorProps) {
   const [trigger, setTrigger] = useState("");
-  const [maxTurns, setMaxTurns] = useState(3);
+  const [maxTurns, setMaxTurns] = useState(15);
   const [agentOrderMode, setAgentOrderMode] = useState<"fixed" | "dynamic">("fixed");
   const [dirty, setDirty] = useState(false);
   const dirtyRef = useRef(dirty);
@@ -167,7 +167,7 @@ export function AgentEditor({
           aria-label="preset-select"
           value={presetName}
           onChange={(e) => onPresetNameChange?.(e.target.value)}
-          className="flex-1 border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-[11px] text-cyberpunk-text outline-none"
+          className="flex-1 border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none"
         >
           {PRESET_NAMES.map((n) => (
             <option key={n} value={n}>
@@ -179,7 +179,7 @@ export function AgentEditor({
           type="button"
           onClick={handleLoadPreset}
           aria-label="preset-load"
-          className="border border-cyberpunk-accent px-2 py-1 text-[10px] text-cyberpunk-accent hover:bg-cyberpunk-accent/20"
+          className="border border-cyberpunk-accent px-2 py-1 text-sm text-cyberpunk-accent hover:bg-cyberpunk-accent/20"
         >
           LOAD
         </button>
@@ -204,13 +204,13 @@ export function AgentEditor({
         type="button"
         onClick={handleAdd}
         aria-label="add-agent"
-        className="mb-2 w-full border border-cyberpunk-neon/40 py-1 text-[11px] text-cyberpunk-neon hover:bg-cyberpunk-neon/20"
+        className="mb-2 w-full border border-cyberpunk-neon/40 py-1 text-sm text-cyberpunk-neon hover:bg-cyberpunk-neon/20"
       >
         + ADD AGENT
       </button>
 
       {validationError && (
-        <div className="mb-2 border border-cyberpunk-danger/60 bg-cyberpunk-danger/10 p-1.5 text-[10px] text-cyberpunk-danger" role="alert">
+        <div className="mb-2 border border-cyberpunk-danger/60 bg-cyberpunk-danger/10 p-1.5 text-sm text-cyberpunk-danger" role="alert">
           {validationError}
         </div>
       )}
@@ -219,7 +219,7 @@ export function AgentEditor({
         <div>
           <label
             htmlFor="editor-trigger"
-            className="mb-0.5 block text-[10px] text-cyberpunk-neon"
+            className="mb-0.5 block text-sm text-cyberpunk-neon"
           >
             TRIGGER MESSAGE
           </label>
@@ -230,14 +230,14 @@ export function AgentEditor({
             onChange={(e) => setTrigger(e.target.value)}
             rows={2}
             placeholder="お題"
-            className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-[11px] text-cyberpunk-text outline-none"
+            className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none"
           />
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
             <label
               htmlFor="editor-max-turns"
-              className="mb-0.5 block text-[10px] text-cyberpunk-neon"
+              className="mb-0.5 block text-sm text-cyberpunk-neon"
             >
               MAX TURNS
             </label>
@@ -248,13 +248,13 @@ export function AgentEditor({
               min={0}
               value={maxTurns}
               onChange={(e) => setMaxTurns(Number(e.target.value))}
-              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-[11px] text-cyberpunk-text outline-none"
+              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none"
             />
           </div>
         </div>
         <fieldset className="space-y-1">
-          <legend className="text-[10px] text-cyberpunk-neon">AGENT ORDER MODE</legend>
-          <div className="flex gap-3 text-[11px]">
+          <legend className="text-sm text-cyberpunk-neon">AGENT ORDER MODE</legend>
+          <div className="flex gap-3 text-sm">
             {(["fixed", "dynamic"] as const).map((m) => (
               <label
                 key={m}
@@ -288,7 +288,7 @@ export function AgentEditor({
             onClick={handleDownload}
             aria-label="download-yaml"
             disabled={specs.length === 0}
-            className="border border-cyberpunk-accent px-2 py-2 text-[11px] text-cyberpunk-accent hover:bg-cyberpunk-accent/20 disabled:opacity-50"
+            className="border border-cyberpunk-accent px-2 py-2 text-sm text-cyberpunk-accent hover:bg-cyberpunk-accent/20 disabled:opacity-50"
           >
             DOWNLOAD YAML
           </button>

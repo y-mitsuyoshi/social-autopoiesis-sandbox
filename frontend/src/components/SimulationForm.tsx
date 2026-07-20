@@ -23,7 +23,7 @@ export function SimulationForm({
   disabled,
 }: SimulationFormProps) {
   const [trigger, setTrigger] = useState("");
-  const [maxTurns, setMaxTurns] = useState(3);
+  const [maxTurns, setMaxTurns] = useState(15);
   const [agentOrderMode, setAgentOrderMode] = useState<"fixed" | "dynamic">(
     "fixed",
   );
@@ -62,7 +62,7 @@ export function SimulationForm({
       <div>
         <label
           htmlFor="trigger"
-          className="mb-1 block text-[11px] text-cyberpunk-neon"
+          className="mb-1 block text-sm text-cyberpunk-neon"
         >
           TRIGGER MESSAGE / お題
         </label>
@@ -79,7 +79,7 @@ export function SimulationForm({
       <div>
         <label
           htmlFor="max_turns"
-          className="mb-1 block text-[11px] text-cyberpunk-neon"
+          className="mb-1 block text-sm text-cyberpunk-neon"
         >
           MAX TURNS / 最大ターン数
         </label>
@@ -96,13 +96,13 @@ export function SimulationForm({
       <div>
         <label
           htmlFor="agents_config"
-          className="mb-1 block text-[11px] text-cyberpunk-neon"
+          className="mb-1 block text-sm text-cyberpunk-neon"
         >
           AGENT CONFIG PRESET / エージェント構成プリセット
         </label>
         <select
           id="agents_config"
-          className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-2 text-[11px] text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
+          className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-2 text-sm text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
           value={agentsConfig}
           onChange={(e) => {
             const val = e.target.value;
@@ -123,10 +123,10 @@ export function SimulationForm({
         </select>
       </div>
       <fieldset className="space-y-1" disabled={disabled}>
-        <legend className="mb-1 text-[11px] text-cyberpunk-neon">
+        <legend className="mb-1 text-sm text-cyberpunk-neon">
           AGENT ORDER MODE
         </legend>
-        <div className="flex gap-3 text-[11px]">
+        <div className="flex gap-3 text-sm">
           {(["fixed", "dynamic"] as const).map((m) => (
             <label
               key={m}
@@ -160,7 +160,7 @@ export function SimulationForm({
         <div className="border-t border-cyberpunk-neon/20 pt-2">
           <label
             htmlFor="simulation_id"
-            className="mb-1 block text-[11px] text-cyberpunk-neon"
+            className="mb-1 block text-sm text-cyberpunk-neon"
           >
             SIMULATION ID (optional / logs reload)
           </label>
@@ -177,7 +177,7 @@ export function SimulationForm({
               type="button"
               onClick={handleLoad}
               disabled={!canLoad}
-              className="border border-cyberpunk-accent px-2 py-1 text-[11px] text-cyberpunk-accent disabled:opacity-40"
+              className="border border-cyberpunk-accent px-2 py-1 text-sm text-cyberpunk-accent disabled:opacity-40"
             >
               LOAD
             </button>

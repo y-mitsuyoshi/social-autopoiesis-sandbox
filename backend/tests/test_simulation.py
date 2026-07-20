@@ -7,7 +7,7 @@ import pytest
 from app.agents import _fallback_agents
 from app.llm_client import LLMClient
 from app.logger import SimulationLogger
-from app.schemas import AgentSpec, AppConfig, SimulationConfig
+from app.schemas import AgentSpec, AppConfig, Message, SimulationConfig
 from app.simulation import run_simulation
 
 from tests.conftest import DummyLLMClient
@@ -132,8 +132,17 @@ async def test_simulation_closes_on_llm_failure(tmp_logs_dir: Path) -> None:
     finally:
         await client.aclose()
         await logger.aclose()
-    assert raised is True
+    assert raised is False
     assert client.closed is True
+
+    # Verify fallback messages
+    text = logger.path.read_text(encoding="utf-8")
+    logged_msgs = [Message.model_validate_json(line) for line in text.splitlines() if line.strip()]
+    assert len(logged_msgs) == 5
+    for msg in logged_msgs:
+        assert "環境からのノイズにより" in msg.message
+        assert msg.provider == "fallback"
+        assert msg.model == "fallback"
 
 
 async def test_simulation_max_turns_zero_graceful_cancel(tmp_logs_dir: Path) -> None:

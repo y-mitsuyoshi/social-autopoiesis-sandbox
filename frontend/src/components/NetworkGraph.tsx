@@ -1,14 +1,18 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import { motion } from "framer-motion";
-import type { AgentNode, NetworkEdge } from "../types";
+import type { AgentNode, Message, NetworkEdge, NetworkViewMode } from "../types";
 import { hashHue } from "../lib/avatar";
+import { DebateVisualizer } from "./DebateVisualizer";
 
 export interface NetworkGraphProps {
   agents: Record<string, AgentNode>;
   edges: NetworkEdge[];
   currentSpeaker: string | null;
   nextSpeaker: string | null;
+  messages?: Message[];
+  viewMode?: NetworkViewMode;
+  onViewModeChange?: (mode: NetworkViewMode) => void;
 }
 
 export function buildEdges(messages: {
@@ -66,6 +70,9 @@ function NetworkGraphBase({
   edges,
   currentSpeaker,
   nextSpeaker,
+  messages,
+  viewMode = "network",
+  onViewModeChange,
 }: NetworkGraphProps) {
   const agentNames = useMemo(() => Object.keys(agents), [agents]);
   const agentNamesKey = agentNames.join(",");
@@ -94,6 +101,44 @@ function NetworkGraphBase({
     }
     return m;
   }, [agents]);
+
+  const autopoieticPath = useMemo(() => {
+    if (!messages || messages.length < 2) return [];
+    const sorted = [...messages].sort((a, b) => a.turn - b.turn);
+    const lastMessages = sorted.slice(-4);
+    const path: { x: number; y: number }[] = [];
+    for (const m of lastMessages) {
+      const pos = positions[m.agent_name];
+      if (pos) {
+        path.push(pos);
+      }
+    }
+    return path;
+  }, [messages, positions]);
+
+  const recentEdges = useMemo(() => {
+    if (!messages || messages.length < 2) return new Set<string>();
+    const sorted = [...messages].sort((a, b) => a.turn - b.turn);
+    const last = sorted.slice(-4);
+    const set = new Set<string>();
+    for (let i = 1; i < last.length; i += 1) {
+      set.add(`${last[i - 1].agent_name}\u0000${last[i].agent_name}`);
+    }
+    return set;
+  }, [messages]);
+
+  const nodeJitter = useMemo(() => {
+    const m: Record<string, { dx: number; dy: number; duration: number }> = {};
+    for (const name of agentNames) {
+      const h = hashHue(name + "jitter");
+      m[name] = {
+        dx: ((h % 30) / 30 - 0.5) * 3,
+        dy: (((h >> 3) % 30) / 30 - 0.5) * 3,
+        duration: 0.3 + (h % 50) / 100,
+      };
+    }
+    return m;
+  }, [agentNames]);
 
   const resetView = useCallback(() => {
     setViewBox({ x: 0, y: 0, w: VIEW_W, h: VIEW_H });
@@ -243,142 +288,249 @@ function NetworkGraphBase({
         })}
       </g>
 
-      {edges.map((e) => {
-        const from = positions[e.from];
-        const to = positions[e.to];
-        if (!from || !to) return null;
-        const sw = 1.2 + Math.log2(e.count + 1);
-        const opacity = Math.min(1, 0.3 + e.count * 0.2);
-        return (
-          <motion.line
-            key={`${e.from}->${e.to}`}
-            x1={from.x}
-            y1={from.y}
-            x2={to.x}
-            y2={to.y}
-            stroke="#00f0ff"
-            strokeWidth={sw}
-            strokeOpacity={opacity}
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ type: "spring", stiffness: 120, damping: 18 }}
-          />
-        );
-      })}
-
-      {agentNames.map((name) => {
-        const a = agents[name];
-        const pos = positions[name];
-        if (!pos) return null;
-        const r = Math.min(40, 20 + a.speakCount * 2);
-        const fillOpacity = 0.35 + (maxCount > 0 ? (a.speakCount / maxCount) * 0.6 : 0);
-        const isCurrent = currentSpeaker === name;
-        const isNext = nextSpeaker === name;
-        const hue = a.avatarHue ?? hashHue(a.binaryCode);
-        const nodeColor = `hsl(${hue}, 85%, 60%)`;
-        const currentColor = "#ff9d00";
-        return (
-          <g
-            key={name}
-            transform={`translate(${pos.x} ${pos.y})${isCurrent ? " scale(1.2)" : ""}`}
-            onPointerDown={(e) => handleNodePointerDown(e, name)}
-            style={{ cursor: draggedNode === name ? "grabbing" : "grab" }}
-            data-testid={`node-${name}`}
-          >
-            <circle
-              r={r}
-              fill="#090f1e"
-              stroke={isCurrent ? currentColor : nodeColor}
-              strokeWidth={isCurrent ? 2.5 : 1.2}
-              fillOpacity={fillOpacity}
-            />
-
-            {isCurrent && (
-              <g>
-                <motion.circle
-                  r={r + 8}
-                  fill="none"
-                  stroke={currentColor}
-                  strokeWidth="1.5"
-                  strokeDasharray="8 12"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+      {viewMode === "debate" ? (
+        <DebateVisualizer
+          agents={agents}
+          messages={messages ?? []}
+          edges={edges}
+          positions={positions}
+        />
+      ) : (
+        <>
+          {edges.map((e) => {
+            const from = positions[e.from];
+            const to = positions[e.to];
+            if (!from || !to) return null;
+            const sw = 1.2 + Math.log2(e.count + 1);
+            const isRecent = recentEdges.has(`${e.from}\u0000${e.to}`);
+            const opacity = isRecent ? 1 : Math.min(1, 0.3 + e.count * 0.2);
+            return (
+              <g key={`${e.from}->${e.to}`}>
+                <motion.line
+                  x1={from.x}
+                  y1={from.y}
+                  x2={to.x}
+                  y2={to.y}
+                  stroke="#00f0ff"
+                  strokeWidth={sw}
+                  strokeOpacity={opacity}
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ type: "spring", stiffness: 120, damping: 18 }}
                 />
-                <path
-                  d={`M ${-r - 10} ${-r - 4} L ${-r - 10} ${-r - 10} L ${-r - 4} ${-r - 10}`}
-                  stroke={currentColor}
-                  strokeWidth="2"
-                  fill="none"
-                />
-                <path
-                  d={`M ${r + 10} ${-r - 4} L ${r + 10} ${-r - 10} L ${r + 4} ${-r - 10}`}
-                  stroke={currentColor}
-                  strokeWidth="2"
-                  fill="none"
-                />
-                <path
-                  d={`M ${-r - 10} ${r + 4} L ${-r - 10} ${r + 10} L ${-r - 4} ${r + 10}`}
-                  stroke={currentColor}
-                  strokeWidth="2"
-                  fill="none"
-                />
-                <path
-                  d={`M ${r + 10} ${r + 4} L ${r + 10} ${r + 10} L ${r + 4} ${r + 10}`}
-                  stroke={currentColor}
-                  strokeWidth="2"
-                  fill="none"
-                />
+                {isRecent && (
+                  <motion.circle
+                    r={2.5}
+                    fill="#ff9d00"
+                    initial={{ cx: from.x, cy: from.y, opacity: 0 }}
+                    animate={{
+                      cx: [from.x, to.x],
+                      cy: [from.y, to.y],
+                      opacity: [0, 1, 0],
+                    }}
+                    transition={{
+                      duration: 1.2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                )}
               </g>
-            )}
+            );
+          })}
 
-            {isNext && !isCurrent && (
-              <motion.circle
-                r={r + 5}
-                fill="none"
-                stroke="#00f0ff"
-                strokeWidth="1.2"
-                strokeDasharray="4 4"
-                animate={{ rotate: -360 }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                style={{ transformOrigin: "0px 0px" }}
-              />
-            )}
+          {autopoieticPath.length >= 2 && (
+            <g data-testid="autopoietic-path">
+              {autopoieticPath.map((pt, idx) => {
+                if (idx === 0) return null;
+                const prev = autopoieticPath[idx - 1];
+                return (
+                  <line
+                    key={`autopoietic-link-${idx}`}
+                    x1={prev.x}
+                    y1={prev.y}
+                    x2={pt.x}
+                    y2={pt.y}
+                    stroke="#ff00a0"
+                    strokeWidth="2.5"
+                    strokeDasharray="4 6"
+                    opacity="0.85"
+                  />
+                );
+              })}
+            </g>
+          )}
 
-            <text
-              y={r + 15}
-              textAnchor="middle"
-              fontSize={10}
-              fill="#c2f1ff"
-              fontFamily="JetBrains Mono, monospace"
-              className="font-bold tracking-wide"
-              style={{ pointerEvents: "none" }}
-            >
-              {name.length > 10 ? name.slice(0, 9) + "\u2026" : name}
-            </text>
-            <text
-              y={4}
-              textAnchor="middle"
-              fontSize={11}
-              fill={isCurrent ? currentColor : nodeColor}
-              fontFamily="JetBrains Mono, monospace"
-              className="font-bold"
-              style={{ pointerEvents: "none" }}
-            >
-              {a.speakCount}
-            </text>
-          </g>
-        );
-      })}
+          {agentNames.map((name) => {
+            const a = agents[name];
+            const pos = positions[name];
+            if (!pos) return null;
+            const r = Math.min(40, 20 + a.speakCount * 2);
+            const fillOpacity = 0.35 + (maxCount > 0 ? (a.speakCount / maxCount) * 0.6 : 0);
+            const isCurrent = currentSpeaker === name;
+            const isNext = nextSpeaker === name;
+            const hue = a.avatarHue ?? hashHue(a.binaryCode);
+            const nodeColor = `hsl(${hue}, 85%, 60%)`;
+            const currentColor = "#ff9d00";
+            const jitter = nodeJitter[name] ?? { dx: 0, dy: 0, duration: 0.5 };
+            return (
+              <motion.g
+                key={name}
+                initial={false}
+                animate={{ x: jitter.dx, y: jitter.dy }}
+                transition={{
+                  duration: jitter.duration,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                  ease: "easeInOut",
+                }}
+                onPointerDown={(e) => handleNodePointerDown(e, name)}
+                style={{ cursor: draggedNode === name ? "grabbing" : "grab" }}
+                data-testid={`node-${name}`}
+              >
+                <g
+                  transform={`translate(${pos.x} ${pos.y})${isCurrent ? " scale(1.2)" : ""}`}
+                >
+                  <circle
+                    r={r + 6}
+                    fill="none"
+                    stroke={nodeColor}
+                    strokeWidth="1"
+                    strokeDasharray="4 4"
+                    strokeOpacity={0.6}
+                    data-testid={`halo-${name}`}
+                  />
+
+                  {isCurrent && (
+                    <g data-testid="irritation-ripples">
+                      <motion.circle
+                        r={r + 12}
+                        fill="none"
+                        stroke={currentColor}
+                        strokeWidth="1.2"
+                        initial={{ scale: 0.9, opacity: 0.8 }}
+                        animate={{ scale: 2.2, opacity: 0 }}
+                        transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut" }}
+                      />
+                      <motion.circle
+                        r={r + 12}
+                        fill="none"
+                        stroke={currentColor}
+                        strokeWidth="0.8"
+                        initial={{ scale: 0.9, opacity: 0.8 }}
+                        animate={{ scale: 3.5, opacity: 0 }}
+                        transition={{ duration: 2.5, delay: 1.0, repeat: Infinity, ease: "easeOut" }}
+                      />
+                      <motion.circle
+                        r={r + 12}
+                        fill="none"
+                        stroke={currentColor}
+                        strokeWidth="0.6"
+                        initial={{ scale: 0.9, opacity: 0.6 }}
+                        animate={{ scale: 4.5, opacity: 0 }}
+                        transition={{ duration: 2.5, delay: 1.5, repeat: Infinity, ease: "easeOut" }}
+                      />
+                    </g>
+                  )}
+
+                  <circle
+                    r={r}
+                    fill="#090f1e"
+                    stroke={isCurrent ? currentColor : nodeColor}
+                    strokeWidth={isCurrent ? 2.5 : 1.2}
+                    fillOpacity={fillOpacity}
+                  />
+
+                  {isCurrent && (
+                    <g>
+                      <motion.circle
+                        r={r + 8}
+                        fill="none"
+                        stroke={currentColor}
+                        strokeWidth="1.5"
+                        strokeDasharray="8 12"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                        style={{ transformOrigin: "0px 0px" }}
+                      />
+                      <path
+                        d={`M ${-r - 10} ${-r - 4} L ${-r - 10} ${-r - 10} L ${-r - 4} ${-r - 10}`}
+                        stroke={currentColor}
+                        strokeWidth="2"
+                        fill="none"
+                      />
+                      <path
+                        d={`M ${r + 10} ${-r - 4} L ${r + 10} ${-r - 10} L ${r + 4} ${-r - 10}`}
+                        stroke={currentColor}
+                        strokeWidth="2"
+                        fill="none"
+                      />
+                      <path
+                        d={`M ${-r - 10} ${r + 4} L ${-r - 10} ${r + 10} L ${-r - 4} ${r + 10}`}
+                        stroke={currentColor}
+                        strokeWidth="2"
+                        fill="none"
+                      />
+                      <path
+                        d={`M ${r + 10} ${r + 4} L ${r + 10} ${r + 10} L ${r + 4} ${r + 10}`}
+                        stroke={currentColor}
+                        strokeWidth="2"
+                        fill="none"
+                      />
+                    </g>
+                  )}
+
+                  {isNext && !isCurrent && (
+                    <motion.circle
+                      r={r + 5}
+                      fill="none"
+                      stroke="#00f0ff"
+                      strokeWidth="1.2"
+                      strokeDasharray="4 4"
+                      animate={{ rotate: -360 }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                      style={{ transformOrigin: "0px 0px" }}
+                    />
+                  )}
+
+                  <text
+                    y={r + 15}
+                    textAnchor="middle"
+                    fontSize={13}
+                    fill="#c2f1ff"
+                    fontFamily="JetBrains Mono, monospace"
+                    className="font-bold tracking-wide"
+                    style={{ pointerEvents: "none" }}
+                  >
+                    {name.length > 10 ? name.slice(0, 9) + "\u2026" : name}
+                  </text>
+                  <text
+                    y={4}
+                    textAnchor="middle"
+                    fontSize={13}
+                    fill={isCurrent ? currentColor : nodeColor}
+                    fontFamily="JetBrains Mono, monospace"
+                    className="font-bold"
+                    style={{ pointerEvents: "none" }}
+                  >
+                    {a.speakCount}
+                  </text>
+                </g>
+              </motion.g>
+            );
+          })}
+        </>
+      )}
 
       <text
         x={viewBox.x + 8}
         y={viewBox.y + viewBox.h - 8}
-        fontSize={9}
+        fontSize={13}
         fill="#7ab8c8"
         fontFamily="JetBrains Mono, monospace"
         style={{ pointerEvents: "none" }}
       >
-        太い＝発話のやり取りが多い
+        {viewMode === "debate" ? "発言者→対象の議論構造" : "太い＝発話のやり取りが多い"}
       </text>
       </svg>
       <button
@@ -386,10 +538,29 @@ function NetworkGraphBase({
         onClick={resetView}
         aria-label="RESET VIEW"
         data-testid="reset-view"
-        className="absolute right-2 top-2 border border-cyberpunk-neon bg-cyberpunk-neon/10 px-2 py-1 text-[10px] text-cyberpunk-neon hover:bg-cyberpunk-neon/20"
+        className="absolute right-2 top-2 border border-cyberpunk-neon bg-cyberpunk-neon/10 px-2 py-1 text-sm text-cyberpunk-neon hover:bg-cyberpunk-neon/20"
       >
         RESET VIEW
       </button>
+      {onViewModeChange && (
+        <div className="absolute left-2 top-2 flex gap-1 text-sm">
+          {(["network", "debate"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-label={`view-mode-${m}`}
+              onClick={() => onViewModeChange(m)}
+              className={
+                viewMode === m
+                  ? "border border-cyberpunk-accent px-2 py-1 text-cyberpunk-accent"
+                  : "border border-cyberpunk-neon/30 px-2 py-1 text-cyberpunk-text/60"
+              }
+            >
+              {m === "network" ? "NETWORK" : "DEBATE"}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

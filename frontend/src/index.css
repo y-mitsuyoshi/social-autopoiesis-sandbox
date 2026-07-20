@@ -13,6 +13,7 @@ body {
   background-color: #060913;
   color: #c2f1ff;
   font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 15px;
   background-image:
     radial-gradient(circle at 20% 20%, rgba(0, 240, 255, 0.1), transparent 60%),
     radial-gradient(circle at 80% 10%, rgba(255, 157, 0, 0.06), transparent 60%),
@@ -138,5 +139,16 @@ body::before {
   body::before,
   .glitch-text {
     animation: none;
+  }
+  .tl-blink,
+  [class*="tl-blink"] {
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

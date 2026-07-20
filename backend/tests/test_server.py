@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from app.agents import AGENTS
 from app.llm_client import LLMError
-from app.schemas import AgentSpec, AppConfig, LLMResponse
+from app.schemas import AgentSpec, AppConfig, LLMResponse, Message
 from app.server import app
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
@@ -325,10 +325,17 @@ def test_post_failed_status_on_llm_error(monkeypatch: pytest.MonkeyPatch, tmp_pa
     with TestClient(app) as client:
         resp = client.post("/api/simulations", json={"trigger_message": "x", "max_turns": 3})
         sim_id = resp.json()["simulation_id"]
-        final = _wait_for_status(client, sim_id, "failed")
-        assert final["status"] == "failed"
-        assert final["error"] is not None
-        assert "sim-failure" in final["error"]
+        final = _wait_for_status(client, sim_id, "completed")
+        assert final["status"] == "completed"
+        assert final["error"] is None
+
+        logs_resp = client.get(f"/api/simulations/{sim_id}/logs")
+        logs = logs_resp.json()
+        assert len(logs) == 3
+        for log in logs:
+            assert "環境からのノイズにより" in log["message"]
+            assert log["provider"] == "fallback"
+            assert log["model"] == "fallback"
 
 
 def test_post_agents_preset_5(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -527,7 +534,9 @@ def test_websocket_not_found(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
             assert obj["event"] == "not_found"
 
 
-def test_websocket_failed_event(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_websocket_resilient_completed_event(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     _clear_state()
     _setup_env(monkeypatch)
     _patch_dummy_clients(monkeypatch, client_factory=lambda: _FailingLLMClient())
@@ -537,16 +546,14 @@ def test_websocket_failed_event(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     with TestClient(app) as client:
         resp = client.post("/api/simulations", json={"trigger_message": "x", "max_turns": 3})
         sim_id = resp.json()["simulation_id"]
-        _wait_for_status(client, sim_id, "failed")
+        _wait_for_status(client, sim_id, "completed")
 
         with client.websocket_connect(f"/ws/simulations/{sim_id}") as ws:
             raw = ws.receive_text()
             import json
 
             obj = json.loads(raw)
-            assert obj["event"] == "failed"
-            assert obj.get("error") is not None
-            assert "sim-failure" in obj["error"]
+            assert obj["event"] == "completed"
 
 
 def test_websocket_completed_fallback(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -577,7 +584,7 @@ def test_async_lock_protected(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
     assert isinstance(_loggers, dict)
 
 
-def test_post_failed_status_on_non_llm_exception(
+def test_post_completed_status_on_non_llm_exception(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     _clear_state()
@@ -588,8 +595,38 @@ def test_post_failed_status_on_non_llm_exception(
     with TestClient(app) as client:
         resp = client.post("/api/simulations", json={"trigger_message": "x", "max_turns": 3})
         sim_id = resp.json()["simulation_id"]
+        final = _wait_for_status(client, sim_id, "completed")
+        assert final["status"] == "completed"
+        assert final["error"] is None
+
+        logs_resp = client.get(f"/api/simulations/{sim_id}/logs")
+        logs = logs_resp.json()
+        assert len(logs) == 3
+        for log in logs:
+            assert "環境からのノイズにより" in log["message"]
+            assert log["provider"] == "fallback"
+            assert log["model"] == "fallback"
+
+
+def test_post_failed_status_on_logger_exception(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _clear_state()
+    _setup_env(monkeypatch)
+    _patch_dummy_clients(monkeypatch)
+    monkeypatch.chdir(tmp_path)
+
+    from app.logger import SimulationLogger
+
+    async def _failing_log(self: SimulationLogger, msg: Message) -> None:
+        raise RuntimeError("logger-failure")
+
+    monkeypatch.setattr(SimulationLogger, "log", _failing_log)
+
+    with TestClient(app) as client:
+        resp = client.post("/api/simulations", json={"trigger_message": "x", "max_turns": 3})
+        sim_id = resp.json()["simulation_id"]
         final = _wait_for_status(client, sim_id, "failed")
         assert final["status"] == "failed"
         assert final["error"] is not None
-        assert "non-llm-failure" in final["error"]
-        assert "sim-failure" not in final["error"]
+        assert "logger-failure" in final["error"]

@@ -131,3 +131,46 @@ def test_simulation_start_request_accepts_agents_inline_only() -> None:
     )
     assert req.agents_inline is not None
     assert req.agents_config is None
+
+
+def test_appconfig_ollama_mode_cloud_optional() -> None:
+    from app.schemas import AppConfig
+
+    cfg = AppConfig(
+        llm_provider="ollama",
+        max_turns=1,
+        ollama_mode="cloud",
+        ollama_api_key="k",
+        ollama_base_url="https://ollama.com/v1",
+        ollama_model="m",
+    )
+    assert cfg.ollama_mode == "cloud"
+
+
+def test_appconfig_ollama_mode_local_optional() -> None:
+    from app.schemas import AppConfig
+
+    cfg = AppConfig(
+        llm_provider="ollama",
+        max_turns=1,
+        ollama_mode="local",
+        ollama_api_key="local",
+        ollama_base_url="http://localhost:11434/v1",
+        ollama_model="m",
+    )
+    assert cfg.ollama_mode == "local"
+
+
+def test_appconfig_ollama_mode_none_default() -> None:
+    from app.schemas import AppConfig
+
+    cfg = AppConfig(
+        llm_provider="ollama",
+        max_turns=1,
+        ollama_api_key="k",
+        ollama_base_url="https://x",
+        ollama_model="m",
+    )
+    assert cfg.ollama_mode is None
+    assert cfg.ollama_cloud_api_key is None
+    assert cfg.ollama_local_model is None

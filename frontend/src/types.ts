@@ -85,4 +85,39 @@ export interface SocietyMetrics {
   edgeCount: number;
   edgeDensity: number;
   activeNodeRatio: number;
+  isOperationalClosure: boolean;
 }
+
+export interface AnalysisDominance {
+  name: string;
+  count: number;
+  avgLength: number;
+  score: number;
+}
+
+export interface AnalysisInteraction {
+  from: string;
+  to: string;
+  count: number;
+}
+
+export interface AnalysisAutopoiesis {
+  edgeDensity: number;
+  diversity: number;
+  maxChainLength: number;
+  totalScore: number;
+}
+
+export interface AnalysisResult {
+  dominance: AnalysisDominance[];
+  interactionMatrix: AnalysisInteraction[];
+  autopoiesis: AnalysisAutopoiesis;
+}
+
+export interface DebateArrow {
+  from: string;
+  to: string;
+  turn: number;
+}
+
+export type NetworkViewMode = "network" | "debate";

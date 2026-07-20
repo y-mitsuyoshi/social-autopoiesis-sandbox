@@ -16,7 +16,7 @@ function buildSpec(): AgentSpecInput[] {
       binary_code: "支払/非支払",
       concern: "コスト・利益・市場価値・資源効率",
       provider: "ollama",
-      model: "gemma4:12b",
+      model: "gemma4:31b",
       is_meta: false,
       system_prompt:
         "あなたは経済システムである。\n世界を二値コード「支払/非支払」で解釈し、\nコスト・利益・市場価値・資源効率に関心を持つ。\n入力されたメッセージをこのコードの視点からのみ解釈し、\n経済システムとしての発言を生成せよ。\n",
@@ -28,7 +28,7 @@ function buildSpec(): AgentSpecInput[] {
       binary_code: "真/偽",
       concern: "データ客観性・論理整合性・エビデンス・事実検証",
       provider: "ollama",
-      model: "gpt-oss:20b-cloud",
+      model: "gpt-oss:120b",
       is_meta: false,
       system_prompt:
         "あなたは科学システムである。\n世界を二値コード「真/偽」で解釈し、\nデータ客観性・論理整合性・エビデンス・事実検証に関心を持つ。\n入力されたメッセージをこのコードの視点からのみ解釈し、\n科学システムとしての発言を生成せよ。\n",
@@ -40,7 +40,7 @@ function buildSpec(): AgentSpecInput[] {
       binary_code: "合法/違法",
       concern: "規約遵守・権利・契約正当性",
       provider: "ollama",
-      model: "gemma4:e4b",
+      model: "llama3.1:8b",
       is_meta: false,
       system_prompt:
         "あなたは法システムである。\n世界を二値コード「合法/違法」で解釈し、\n規約遵守・権利・契約正当性に関心を持つ。\n入力されたメッセージをこのコードの視点からのみ解釈し、\n法システムとしての発言を生成せよ。",
@@ -52,7 +52,7 @@ function buildSpec(): AgentSpecInput[] {
       binary_code: "興味深い/退屈",
       concern: "創造性・美的判断・形式の革新",
       provider: "ollama",
-      model: "gemma4:12b",
+      model: "gemma4:31b",
       is_meta: false,
       system_prompt:
         "あなたは芸術システムである。\n世界を二値コード「興味深い/退屈」で解釈し、\n創造性・美的判断・形式の革新に関心を持つ。\n入力されたメッセージをこのコードの視点からのみ解釈し、\n芸術システムとしての発言を生成せよ。\n",

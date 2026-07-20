@@ -7,6 +7,9 @@ import { StatsPanel } from "./components/StatsPanel";
 import { GlitchText } from "./components/GlitchText";
 import { AgentEditor, type AgentEditorSubmitParams } from "./components/AgentEditor";
 import { SpeakCountChart } from "./components/SpeakCountChart";
+import { BinaryCodeGauge } from "./components/BinaryCodeGauge";
+import { EducationalPanel } from "./components/EducationalPanel";
+import { AnalysisPanel } from "./components/AnalysisPanel";
 import {
   fetchSimulationLogs,
   openSimulationSocket,
@@ -18,6 +21,7 @@ import type {
   AgentNode,
   AgentSpecInput,
   Message,
+  NetworkViewMode,
   SimulationStatus,
 } from "./types";
 
@@ -36,6 +40,8 @@ export default function App() {
     PRESETS["agents-5"].map((s) => ({ ...s })),
   );
   const [presetName, setPresetName] = useState<string>("agents-5");
+  const [eduOpen, setEduOpen] = useState(false);
+  const [networkViewMode, setNetworkViewMode] = useState<NetworkViewMode>("network");
   const wsRef = useRef<WebSocket | null>(null);
   const statusRef = useRef<SimulationStatus>(status);
   statusRef.current = status;
@@ -142,8 +148,8 @@ export default function App() {
     [messages, maxTurns, startedAt],
   );
   const society = useMemo(
-    () => computeSociety(agents, edges, agentOrder.length || Object.keys(agents).length),
-    [agents, edges, agentOrder],
+    () => computeSociety(agents, edges, agentOrder.length || Object.keys(agents).length, messages),
+    [agents, edges, agentOrder, messages],
   );
 
   const handleSubmit = async (params: AgentEditorSubmitParams) => {
@@ -220,7 +226,7 @@ export default function App() {
       <div className="relative min-h-screen p-3 text-cyberpunk-text">
         <header className="mb-4 flex flex-col border-b border-cyberpunk-neon/30 pb-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
-            <div className="text-[9px] font-bold tracking-[0.25em] text-cyberpunk-accent">
+            <div className="text-sm font-bold tracking-[0.25em] text-cyberpunk-accent">
               SECTION 9 SECURITY PROTOCOL // DIRECT NEURAL CONNECTION
             </div>
             <GlitchText
@@ -229,7 +235,7 @@ export default function App() {
               className="text-base font-extrabold tracking-[0.15em] text-cyberpunk-neon sm:text-lg"
             />
           </div>
-          <div className="mt-2 flex items-center gap-3 text-[10px] sm:mt-0">
+          <div className="mt-2 flex items-center gap-3 text-sm sm:mt-0">
             <span className="flex items-center gap-1.5 border border-cyberpunk-neon/30 bg-cyberpunk-neon/10 px-2 py-0.5 text-cyberpunk-neon">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyberpunk-neon" />
               NET: ACTIVE
@@ -238,12 +244,39 @@ export default function App() {
               <span className="h-1.5 w-1.5 animate-ping rounded-full bg-cyberpunk-accent" />
               SIM STATUS: {status.toUpperCase()}
             </span>
+            <button
+              type="button"
+              onClick={() => setEduOpen(true)}
+              className="border border-cyberpunk-neon bg-cyberpunk-neon/10 px-2.5 py-1 text-sm text-cyberpunk-neon hover:bg-cyberpunk-neon/20 transition-all font-mono"
+              data-testid="theory-guide-btn"
+            >
+              THEORY GUIDE
+            </button>
           </div>
         </header>
 
+        {/* AUTOPOIESIS PROOF STATUS */}
+        <div className="mb-4">
+          {society.isOperationalClosure ? (
+            <div
+              className="flex items-center justify-center border border-emerald-500/50 bg-emerald-500/10 p-3 rounded font-mono text-center font-bold tracking-[0.2em] text-emerald-400 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+              data-testid="autopoiesis-status"
+            >
+              AUTOPOIESIS PROVEN
+            </div>
+          ) : (
+            <div
+              className="flex items-center justify-center border border-yellow-500/50 bg-yellow-500/10 p-3 rounded font-mono text-center font-bold tracking-[0.1em] text-yellow-500"
+              data-testid="autopoiesis-status"
+            >
+              UNPROVEN / OPERATIONAL CLOSURE INCOMPLETE
+            </div>
+          )}
+        </div>
+
         {error && (
           <div
-            className="mb-3 border border-cyberpunk-danger bg-cyberpunk-danger/10 p-2 text-[12px] text-cyberpunk-danger"
+            className="mb-3 border border-cyberpunk-danger bg-cyberpunk-danger/10 p-2 text-sm text-cyberpunk-danger"
             role="alert"
           >
             <GlitchText as="span" text="ERROR" /> : {error}
@@ -265,6 +298,8 @@ export default function App() {
               status={status}
               maxTurns={maxTurns}
               elapsedMs={stats.elapsedMs}
+              messages={messages}
+              agents={agents}
             />
           </aside>
 
@@ -279,7 +314,18 @@ export default function App() {
                 edges={edges}
                 currentSpeaker={currentSpeaker}
                 nextSpeaker={nextSpeaker}
+                messages={messages}
+                viewMode={networkViewMode}
+                onViewModeChange={setNetworkViewMode}
               />
+              {currentSpeaker && agents[currentSpeaker] && messages.length > 0 && (
+                <div className="absolute bottom-2 left-2 w-48 z-10 pointer-events-auto" data-testid="app-binary-gauge-container">
+                  <BinaryCodeGauge
+                    binaryCode={agents[currentSpeaker].binaryCode}
+                    messageText={messages[messages.length - 1].message}
+                  />
+                </div>
+              )}
               {status === "completed" && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <GlitchText
@@ -315,7 +361,7 @@ export default function App() {
                 <h2 className="text-xs text-cyberpunk-neon neon-glow">
                   TIMELINE
                 </h2>
-                <div className="flex gap-1 text-[10px]">
+                <div className="flex gap-1 text-sm">
                   {(["S", "M", "L"] as const).map((z) => (
                     <button
                       key={z}
@@ -350,9 +396,15 @@ export default function App() {
               agents={agentsWithState}
             />
             <LogsReload onLoadLogs={handleLoadLogs} disabled={status === "running"} />
+            <AnalysisPanel
+              messages={messages}
+              agents={agentsWithState}
+              status={status}
+            />
           </aside>
         </div>
       </div>
+      <EducationalPanel isOpen={eduOpen} onClose={() => setEduOpen(false)} />
     </MotionConfig>
   );
 }
@@ -372,7 +424,7 @@ function LogsReload({
       <div className="flex gap-2">
         <input
           aria-label="simulation-id"
-          className="flex-1 border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-2 text-[11px] text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
+          className="flex-1 border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-2 text-sm text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
           value={simulationId}
           onChange={(e) => setSimulationId(e.target.value)}
           placeholder="過去シミュレーションID"
@@ -383,7 +435,7 @@ function LogsReload({
           aria-label="load-logs"
           disabled={!canLoad}
           onClick={() => onLoadLogs(simulationId.trim())}
-          className="border border-cyberpunk-accent px-2 py-1 text-[11px] text-cyberpunk-accent disabled:opacity-40"
+          className="border border-cyberpunk-accent px-2 py-1 text-sm text-cyberpunk-accent disabled:opacity-40"
         >
           LOAD
         </button>

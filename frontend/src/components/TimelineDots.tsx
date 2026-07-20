@@ -55,8 +55,8 @@ export function TimelineDots({
             <span
               className={
                 isCurrent
-                  ? "text-[9px] text-cyberpunk-accent"
-                  : "text-[9px] text-cyberpunk-text/60"
+                  ? "text-sm text-cyberpunk-accent"
+                  : "text-sm text-cyberpunk-text/60"
               }
             >
               {m.turn}

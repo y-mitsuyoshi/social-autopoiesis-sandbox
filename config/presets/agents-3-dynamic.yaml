@@ -3,7 +3,7 @@ agents:
     binary_code: 支払/非支払
     concern: コスト・利益・市場価値・資源効率
     provider: ollama
-    model: gemma4:12b
+    model: gemma4:31b
     is_meta: false
     system_prompt: |
       あなたは経済システムである。
@@ -15,7 +15,7 @@ agents:
     binary_code: 真/偽
     concern: データ客観性・論理整合性・エビデンス・事実検証
     provider: ollama
-    model: gpt-oss:20b-cloud
+    model: gpt-oss:120b
     is_meta: false
     system_prompt: |
       あなたは科学システムである。
@@ -27,7 +27,7 @@ agents:
     binary_code: 合法/違法
     concern: 規約遵守・権利・契約正当性
     provider: ollama
-    model: gemma4:e4b
+    model: llama3.1:8b
     is_meta: false
     system_prompt: |
       あなたは法システムである。
@@ -39,7 +39,7 @@ agents:
     binary_code: 順序/選択
     concern: 次番発言者選択
     provider: ollama
-    model: gemma4:12b
+    model: gemma4:31b
     is_meta: true
     system_prompt: |
       あなたはディスカッションのモデレータである。

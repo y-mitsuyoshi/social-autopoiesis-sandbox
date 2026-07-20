@@ -49,13 +49,13 @@ function AgentEditorCardBase({
       aria-label={`agent-card-${index}`}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
-        <span className="text-[10px] text-cyberpunk-neon">#{index + 1}</span>
+        <span className="text-sm text-cyberpunk-neon">#{index + 1}</span>
         <div className="flex gap-1">
           <button
             type="button"
             onClick={onDuplicate}
             aria-label={`duplicate-${index}`}
-            className="border border-cyberpunk-neon/40 px-1.5 py-0.5 text-[9px] text-cyberpunk-neon hover:bg-cyberpunk-neon/20"
+            className="border border-cyberpunk-neon/40 px-1.5 py-0.5 text-sm text-cyberpunk-neon hover:bg-cyberpunk-neon/20"
           >
             DUPLICATE
           </button>
@@ -63,7 +63,7 @@ function AgentEditorCardBase({
             type="button"
             onClick={onRemove}
             aria-label={`remove-${index}`}
-            className="border border-cyberpunk-danger/60 px-1.5 py-0.5 text-[9px] text-cyberpunk-danger hover:bg-cyberpunk-danger/20"
+            className="border border-cyberpunk-danger/60 px-1.5 py-0.5 text-sm text-cyberpunk-danger hover:bg-cyberpunk-danger/20"
           >
             REMOVE
           </button>
@@ -78,7 +78,7 @@ function AgentEditorCardBase({
               aria-label={`name-${index}`}
               value={spec.name}
               onChange={(e) => onChange({ ...spec, name: e.target.value })}
-              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-[11px] text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
+              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
             />
           </Field>
           <Field label="BINARY CODE">
@@ -87,7 +87,7 @@ function AgentEditorCardBase({
               aria-label={`binary_code-${index}`}
               value={spec.binary_code}
               onChange={(e) => onChange({ ...spec, binary_code: e.target.value })}
-              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-[11px] text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
+              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
             />
           </Field>
           <Field label="CONCERN">
@@ -96,7 +96,7 @@ function AgentEditorCardBase({
               aria-label={`concern-${index}`}
               value={spec.concern}
               onChange={(e) => onChange({ ...spec, concern: e.target.value })}
-              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-[11px] text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
+              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
             />
           </Field>
           <Field label="SYSTEM PROMPT">
@@ -105,18 +105,18 @@ function AgentEditorCardBase({
               value={spec.system_prompt}
               onChange={(e) => onChange({ ...spec, system_prompt: e.target.value })}
               rows={6}
-              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-[11px] text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
+              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
             />
           </Field>
           <div className="grid grid-cols-2 gap-2">
             <Field label="PROVIDER">
               <select
                 aria-label={`provider-${index}`}
-                value={spec.provider}
-                onChange={(e) =>
-                  onChange({ ...spec, provider: e.target.value as AgentProvider })
-                }
-                className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-[11px] text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
+                  value={spec.provider}
+                  onChange={(e) =>
+                    onChange({ ...spec, provider: e.target.value as AgentProvider })
+                  }
+                  className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
               >
                 {PROVIDERS.map((p) => (
                   <option key={p} value={p}>
@@ -131,11 +131,11 @@ function AgentEditorCardBase({
                 aria-label={`model-${index}`}
                 value={spec.model}
                 onChange={(e) => onChange({ ...spec, model: e.target.value })}
-                className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-[11px] text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
+                className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
               />
             </Field>
           </div>
-          <label className="flex items-center gap-1 text-[10px] text-cyberpunk-text/80">
+          <label className="flex items-center gap-1 text-sm text-cyberpunk-text/80">
             <input
               type="checkbox"
               aria-label={`is_meta-${index}`}
@@ -158,7 +158,7 @@ function AgentEditorCardBase({
               />
               <label
                 htmlFor={`avatar_hue-${index}`}
-                className="text-[9px] text-cyberpunk-text/70"
+                className="text-sm text-cyberpunk-text/70"
               >
                 HUE
               </label>
@@ -184,11 +184,11 @@ function AgentEditorCardBase({
               onChange={(e) =>
                 onChange({ ...spec, avatar_hue: Number(e.target.value) })
               }
-              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-[10px] text-cyberpunk-text outline-none"
+              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none"
             />
             <label
               htmlFor={`avatar_glyph-${index}`}
-              className="text-[9px] text-cyberpunk-text/70"
+              className="text-sm text-cyberpunk-text/70"
             >
               GLYPH
             </label>
@@ -199,7 +199,7 @@ function AgentEditorCardBase({
               aria-label={`avatar_glyph-${index}`}
               value={spec.avatar_glyph ?? ""}
               onChange={(e) => onChange({ ...spec, avatar_glyph: e.target.value })}
-              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-[10px] text-cyberpunk-text outline-none"
+              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none"
             />
           </div>
         </div>
@@ -211,7 +211,7 @@ function AgentEditorCardBase({
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <span className="mb-0.5 block text-[9px] text-cyberpunk-neon">{label}</span>
+      <span className="mb-0.5 block text-sm text-cyberpunk-neon">{label}</span>
       {children}
     </div>
   );

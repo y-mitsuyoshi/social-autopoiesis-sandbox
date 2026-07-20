@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { motion } from "framer-motion";
 import type { Message, AgentNode } from "../types";
 import { MessageBubble } from "./MessageBubble";
 import { TimelineDots } from "./TimelineDots";
@@ -11,9 +12,9 @@ export interface TimelineListProps {
 }
 
 const ZOOM_FONT: Record<TimelineListProps["zoom"], number> = {
-  S: 11,
-  M: 13,
-  L: 16,
+  S: 14,
+  M: 16,
+  L: 20,
 };
 
 export function TimelineList({
@@ -42,6 +43,20 @@ export function TimelineList({
     }
   };
 
+  const recentOffsets = useMemo<number[]>(() => {
+    const n = messages.length;
+    const arr: number[] = new Array(n).fill(0);
+    for (let i = 0; i < n; i += 1) {
+      const distFromEnd = n - 1 - i;
+      if (distFromEnd < 3) {
+        const seed = (messages[i].turn * 37 + i * 13) % 9;
+        const sign = seed % 2 === 0 ? 1 : -1;
+        arr[i] = sign * (((seed % 5) / 5) * 4);
+      }
+    }
+    return arr;
+  }, [messages]);
+
   return (
     <div
       ref={containerRef}
@@ -63,12 +78,15 @@ export function TimelineList({
         <ul className="flex-1 space-y-2 overflow-y-auto pr-1">
           {messages.map((m, idx) => {
             const isSpeaker = currentSpeaker === m.agent_name;
+            const offsetX = recentOffsets[idx] ?? 0;
             return (
-              <li
+              <motion.li
                 key={`${m.turn}-${idx}`}
                 ref={(el) => {
                   messageRefs.current[m.turn] = el;
                 }}
+                animate={offsetX !== 0 ? { x: offsetX } : { x: 0 }}
+                transition={{ type: "spring", stiffness: 140, damping: 18 }}
                 style={
                   isSpeaker
                     ? {
@@ -85,7 +103,7 @@ export function TimelineList({
                   isLast={idx === messages.length - 1}
                   currentSpeaker={currentSpeaker ?? null}
                 />
-              </li>
+              </motion.li>
             );
           })}
         </ul>

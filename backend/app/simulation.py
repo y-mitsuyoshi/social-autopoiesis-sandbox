@@ -1,6 +1,5 @@
 import asyncio
 import re
-from itertools import count
 
 from app.llm_client import LLMClient
 from app.logger import SimulationLogger
@@ -75,12 +74,21 @@ def validate_dynamic_order(agents: list[AgentSpec], sim_config: SimulationConfig
         raise ValueError("agent_order must contain at least one non-meta agent for dynamic mode")
 
 
-def _build_user_content(trigger: str, history: list[str]) -> str:
+def _build_user_content(trigger: str, history: list[str | tuple[str, str, str]]) -> str:
     if not history:
         return f"お題: {trigger}\n直前の発言: {trigger}"
-    if len(history) == 1:
-        return f"お題: {trigger}\n直前の発言: {history[0]}"
-    history_block = "\n".join(history)
+
+    formatted_history = []
+    for item in history:
+        if isinstance(item, tuple):
+            name, code, msg = item
+            formatted_history.append(f"[{name} ({code})]: {msg}")
+        else:
+            formatted_history.append(item)
+
+    if len(formatted_history) == 1:
+        return f"お題: {trigger}\n直前の発言: {formatted_history[0]}"
+    history_block = "\n".join(formatted_history)
     return f"お題: {trigger}\n過去の発言:\n{history_block}"
 
 
@@ -114,39 +122,29 @@ async def run_simulation(
     meta_agents = [a for a in agents if a.is_meta]
     meta_agent = meta_agents[0] if meta_agents else None
 
-    history: list[str] = []
+    history: list[str | tuple[str, str, str]] = []
+    spoken_in_cycle: set[str] = set()
+    last_speaker: str | None = None
+
     try:
         turn = 0
-        next_agent = order[0]
-        for _counter in count():
+        while True:
             if config.max_turns and turn >= config.max_turns:
                 break
-            agent = next_agent
-            client = clients[agent.name]
-            messages = [
-                {"role": "system", "content": agent.system_prompt},
-                {
-                    "role": "user",
-                    "content": _build_user_content(config.trigger_message, history),
-                },
-            ]
-            resp = await client.complete(messages)
-            msg = Message(
-                turn=turn,
-                agent_name=agent.name,
-                agent_code=agent.binary_code,
-                message=resp.content,
-                provider=resp.provider,
-                model=resp.model,
-            )
-            await logger.log(msg)
-            history.append(resp.content)
-            while len(history) > config.history_length:
-                history.pop(0)
 
             if config.agent_order_mode == "dynamic" and meta_agent is not None:
+                # Reset cycle when all non-meta agents have spoken
+                if len(spoken_in_cycle) >= len(order):
+                    spoken_in_cycle.clear()
+
+                candidates = [a for a in order if a.name not in spoken_in_cycle]
+
+                # Prevent consecutive speaking at cycle boundaries
+                if len(order) > 1 and last_speaker is not None and not spoken_in_cycle:
+                    candidates = [a for a in candidates if a.name != last_speaker]
+
+                candidate_names = [a.name for a in candidates]
                 meta_client = clients[meta_agent.name]
-                candidate_names = [a.name for a in order]
                 meta_messages = [
                     {"role": "system", "content": meta_agent.system_prompt},
                     {
@@ -157,15 +155,67 @@ async def run_simulation(
                         ),
                     },
                 ]
-                meta_resp = await meta_client.complete(meta_messages)
-                fallback_index = (turn + 1) % len(order)
-                next_name = _select_next_agent_by_meta(
-                    meta_resp.content, candidate_names, fallback_index
-                )
-                next_agent = agent_map[next_name]
-            else:
-                next_agent = order[(turn + 1) % len(order)]
 
+                fallback_index = (turn + 1) % len(order)
+                try:
+                    meta_resp = await meta_client.complete(meta_messages)
+                    next_name = _select_next_agent_by_meta(
+                        meta_resp.content, candidate_names, fallback_index
+                    )
+                except Exception as exc:
+                    print(f"[Fallback Warning] 通信障害によるフォールバック話者選択: {exc}")
+                    # Deterministically fall back to the next candidate index
+                    next_name = candidate_names[fallback_index % len(candidate_names)]
+
+                agent = agent_map[next_name]
+            else:
+                agent = order[turn % len(order)]
+
+            client = clients[agent.name]
+            guideline = (
+                "\n\n対話のガイドライン:\n"
+                "前の発言者の内容（発言履歴）を踏まえ、社会システムとして対話的応答（対立、同意、疑問の表明など）を交えながら、"
+                "他エージェントの発言やコードに具体的に言及して自然な対話を行ってください。"
+            )
+            messages = [
+                {"role": "system", "content": agent.system_prompt + guideline},
+                {
+                    "role": "user",
+                    "content": _build_user_content(config.trigger_message, history),
+                },
+            ]
+
+            try:
+                resp = await client.complete(messages)
+                resp_content = resp.content
+                provider = resp.provider
+                model = resp.model
+            except Exception as exc:
+                print(f"[Fallback Warning] 通信障害によるフォールバック発言の生成: {exc}")
+                resp_content = (
+                    "「（環境からのノイズにより一時的に通信が途絶しています。"
+                    "システムは作動的閉鎖を維持しています）」"
+                )
+                provider = "fallback"
+                model = "fallback"
+
+            msg = Message(
+                turn=turn,
+                agent_name=agent.name,
+                agent_code=agent.binary_code,
+                message=resp_content,
+                provider=provider,
+                model=model,
+            )
+            await logger.log(msg)
+            history.append((agent.name, agent.binary_code, resp_content))
+            while len(history) > config.history_length:
+                history.pop(0)
+
+            if config.agent_order_mode == "dynamic" and meta_agent is not None:
+                spoken_in_cycle.add(agent.name)
+
+            last_speaker = agent.name
             turn += 1
             await asyncio.sleep(0)
     except asyncio.CancelledError:

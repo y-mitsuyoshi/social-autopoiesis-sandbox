@@ -19,6 +19,7 @@ export function MessageBubble({
   const hue = agent?.avatarHue ?? hashHue(message.agent_code);
   const borderColor = `hsl(${hue}, 80%, 60%)`;
   const live = isLast && (currentSpeaker === null || currentSpeaker === message.agent_name);
+  const chars = Array.from(message.message);
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -34,12 +35,12 @@ export function MessageBubble({
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-cyberpunk-neon">
+        <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-bold text-cyberpunk-neon">
           <span className="rounded border border-cyberpunk-neon/60 px-1">
             T{message.turn}
           </span>
           <span
-            className="text-[12px] font-bold text-cyberpunk-text"
+            className="text-cyberpunk-text"
             style={{ color: borderColor }}
           >
             {message.agent_name}
@@ -52,8 +53,22 @@ export function MessageBubble({
             <span className="ml-auto text-cyberpunk-accent">●LIVE</span>
           )}
         </div>
-        <p className="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed text-cyberpunk-text">
-          {message.message}
+        <p
+          className="whitespace-pre-wrap break-words font-mono leading-relaxed text-cyberpunk-text"
+          style={{ fontSize: "inherit" }}
+        >
+          {live
+            ? chars.map((ch, i) => (
+                <motion.span
+                  key={i}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.05, delay: i * 0.02 }}
+                >
+                  {ch}
+                </motion.span>
+              ))
+            : message.message}
         </p>
       </div>
     </motion.div>

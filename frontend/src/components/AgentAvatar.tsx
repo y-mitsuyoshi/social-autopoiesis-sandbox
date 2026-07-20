@@ -50,6 +50,22 @@ function AgentAvatarBase({ agent, size = 48 }: AgentAvatarProps) {
       />
     ) : null;
 
+  const waveStyle = `
+    @keyframes soundWave {
+      0%, 100% { transform: scaleY(0.3); }
+      50% { transform: scaleY(1.0); }
+    }
+    .audio-wave-bar {
+      will-change: transform;
+      transform-origin: bottom;
+      animation: soundWave 0.8s ease-in-out infinite;
+    }
+    .audio-wave-bar:nth-child(1) { animation-delay: 0.1s; }
+    .audio-wave-bar:nth-child(2) { animation-delay: 0.3s; }
+    .audio-wave-bar:nth-child(3) { animation-delay: 0.2s; }
+    .audio-wave-bar:nth-child(4) { animation-delay: 0.4s; }
+  `;
+
   return (
     <motion.div
       className="relative inline-flex items-center justify-center rounded-full"
@@ -61,16 +77,40 @@ function AgentAvatarBase({ agent, size = 48 }: AgentAvatarProps) {
         ease: "easeInOut",
       }}
     >
+      <style>{waveStyle}</style>
+
+      {/* Left audio wave (speaking only) */}
+      {agent.state === "speaking" && (
+        <div className="absolute -left-6 flex h-6 w-4 items-end justify-between pointer-events-none">
+          <div className="audio-wave-bar h-full w-[2px] bg-cyberpunk-neon rounded" />
+          <div className="audio-wave-bar h-full w-[2px] bg-cyberpunk-neon rounded" />
+          <div className="audio-wave-bar h-full w-[2px] bg-cyberpunk-neon rounded" />
+          <div className="audio-wave-bar h-full w-[2px] bg-cyberpunk-neon rounded" />
+        </div>
+      )}
+
       <div
         className="h-full w-full overflow-hidden rounded-full"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted local SVG
         dangerouslySetInnerHTML={{ __html: svg }}
       />
+
+      {/* Right audio wave (speaking only) */}
+      {agent.state === "speaking" && (
+        <div className="absolute -right-6 flex h-6 w-4 items-end justify-between pointer-events-none">
+          <div className="audio-wave-bar h-full w-[2px] bg-cyberpunk-neon rounded" />
+          <div className="audio-wave-bar h-full w-[2px] bg-cyberpunk-neon rounded" />
+          <div className="audio-wave-bar h-full w-[2px] bg-cyberpunk-neon rounded" />
+          <div className="audio-wave-bar h-full w-[2px] bg-cyberpunk-neon rounded" />
+        </div>
+      )}
+
       {ring}
+
       {agent.state === "speaking" && (
         <span
           aria-hidden
-          className="absolute -bottom-1 -right-1 rounded bg-cyberpunk-accent px-1 text-[8px] font-bold text-black"
+          className="absolute -bottom-1 -right-1 rounded bg-cyberpunk-accent px-1 text-sm font-bold text-black"
         >
           MIC
         </span>

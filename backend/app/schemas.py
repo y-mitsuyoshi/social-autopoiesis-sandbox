@@ -60,6 +60,7 @@ class SimulationConfig(BaseModel):
     agent_order: list[str]
     agent_order_mode: Literal["fixed", "dynamic"] = "fixed"
     history_length: int = Field(default=1, ge=1)
+    llm_timeout: float = Field(default=120.0, ge=1.0, le=300.0)
 
     @model_validator(mode="after")
     def validate_agent_order(self) -> "SimulationConfig":
@@ -82,7 +83,14 @@ class AppConfig(BaseModel):
     agents_config: str | None = None
     agent_order_mode: Literal["fixed", "dynamic"] = "fixed"
     history_length: int = Field(default=1, ge=1)
+    llm_timeout: float = Field(default=120.0, ge=1.0, le=300.0)
 
+    ollama_mode: Literal["cloud", "local"] | None = None
+    ollama_cloud_api_key: str | None = None
+    ollama_cloud_base_url: str | None = None
+    ollama_cloud_model: str | None = None
+    ollama_local_base_url: str | None = None
+    ollama_local_model: str | None = None
     ollama_api_key: str | None = None
     ollama_base_url: str | None = None
     ollama_model: str | None = None
@@ -191,6 +199,7 @@ class SimulationStartRequest(BaseModel):
     agents_inline: list[AgentSpec] | None = None
     agent_order_mode: Literal["fixed", "dynamic"] | None = None
     history_length: int | None = None
+    llm_timeout: float | None = Field(default=None, ge=1.0, le=300.0)
 
     @model_validator(mode="after")
     def validate_exclusive_agents_source(self) -> "SimulationStartRequest":
