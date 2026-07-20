@@ -220,3 +220,25 @@ __marimo__/
 # runtime logs
 logs/
 *.jsonl
+
+# AI agent workspace directories (auto-generated per run, not project config)
+# Keep: .agents/AGENTS.md, .agents/hooks.json, .agents/prompts/, .agents/skills/
+.agents/ORIGINAL_REQUEST.md
+.agents/*_phase*/
+.agents/*_phase*_gen*/
+.agents/architect_phase*/
+.agents/architect_reviewer_phase*/
+.agents/auditor_qa_phase*/
+.agents/implementer_phase*/
+.agents/prd_manager_phase*/
+.agents/qa_engineer_phase*/
+.agents/qa_engineer_v*/
+.agents/team_reviewer_phase*/
+.agents/teamwork_preview_*/
+.agents/orchestrator/
+.agents/sentinel/
+.agents/victory_auditor/
+.agents/victory_auditor_*/
+
+# Agent audit / verdict reports (ephemeral run artifacts)
+audit_verdict.md
