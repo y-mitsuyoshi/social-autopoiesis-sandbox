@@ -73,9 +73,15 @@ def _resolve_ollama_config() -> dict[str, str | None]:
         "ollama_cloud_model": os.environ.get("OLLAMA_CLOUD_MODEL") or None,
         "ollama_local_base_url": os.environ.get("OLLAMA_LOCAL_BASE_URL") or None,
         "ollama_local_model": os.environ.get("OLLAMA_LOCAL_MODEL") or None,
-        "ollama_api_key": os.environ.get("OLLAMA_API_KEY") or None,
-        "ollama_base_url": os.environ.get("OLLAMA_BASE_URL") or None,
-        "ollama_model": os.environ.get("OLLAMA_MODEL") or None,
+        "ollama_api_key": os.environ.get("OLLAMA_API_KEY")
+        or os.environ.get("OLLAMA_CLOUD_API_KEY")
+        or None,
+        "ollama_base_url": os.environ.get("OLLAMA_BASE_URL")
+        or os.environ.get("OLLAMA_CLOUD_BASE_URL")
+        or None,
+        "ollama_model": os.environ.get("OLLAMA_MODEL")
+        or os.environ.get("OLLAMA_CLOUD_MODEL")
+        or None,
     }
 
 

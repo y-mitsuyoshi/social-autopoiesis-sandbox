@@ -63,8 +63,8 @@ function buildSpec(): AgentSpecInput[] {
       name: "メディアシステム",
       binary_code: "伝達/非伝達",
       concern: "注目・拡散・ニュース価値・世論形成",
-      provider: "gemini",
-      model: "gemini-2.5-flash",
+      provider: "ollama",
+      model: "gemma4:31b",
       is_meta: false,
       system_prompt:
         "あなたはマスメディアシステムである。\n世界を二値コード「伝達/非伝達」で解釈し、\n注目・拡散・ニュース価値・世論形成に関心を持つ。\n入力されたメッセージをこのコードの視点からのみ解釈し、\nマスメディアシステムとしての発言を生成せよ。\n",

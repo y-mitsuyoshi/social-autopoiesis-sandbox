@@ -99,3 +99,13 @@ export function openSimulationSocket(
   };
   return ws;
 }
+
+export async function fetchProviderHealth(): Promise<{
+  providers: Record<string, { status: string; response?: string; message?: string }>;
+}> {
+  const resp = await fetch("/api/health/providers");
+  if (!resp.ok) {
+    throw new Error(`fetchProviderHealth failed: ${resp.status}`);
+  }
+  return await resp.json();
+}

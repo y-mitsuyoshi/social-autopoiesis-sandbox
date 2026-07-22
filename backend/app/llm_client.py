@@ -69,9 +69,13 @@ class OpenAICompatibleClient:
     ) -> None:
         self._provider = provider
         self._model = model
+        headers = {}
+        if api_key and api_key != "local":
+            headers["Authorization"] = f"Bearer {api_key}"
+        normalized_url = base_url.rstrip("/") + "/"
         self._client = httpx.AsyncClient(
-            base_url=base_url,
-            headers={"Authorization": f"Bearer {api_key}"},
+            base_url=normalized_url,
+            headers=headers,
             timeout=timeout,
         )
 
@@ -86,7 +90,7 @@ class OpenAICompatibleClient:
     async def complete(self, messages: list[dict[str, str]]) -> LLMResponse:
         async def _call() -> LLMResponse:
             resp = await self._client.post(
-                "/chat/completions",
+                "chat/completions",
                 json={
                     "model": self._model,
                     "messages": messages,
@@ -102,7 +106,7 @@ class OpenAICompatibleClient:
     async def complete_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
         async with self._client.stream(
             "POST",
-            "/chat/completions",
+            "chat/completions",
             json={
                 "model": self._model,
                 "messages": messages,
@@ -197,15 +201,62 @@ class GeminiClient:
         await self._client.aclose()
 
 
-def _build_single_client(provider: str, model: str, config: AppConfig) -> LLMClient:
+class FallbackAwareClient:
+    def __init__(
+        self,
+        primary_client: LLMClient,
+        fallback_clients: list[LLMClient],
+    ) -> None:
+        self._primary = primary_client
+        self._fallbacks = fallback_clients
+
+    async def complete(self, messages: list[dict[str, str]]) -> LLMResponse:
+        try:
+            return await self._primary.complete(messages)
+        except Exception as exc:
+            print(
+                f"[Client Fallback] Primary LLM request failed ({exc}). Retrying with fallbacks..."
+            )
+            for fb in self._fallbacks:
+                try:
+                    return await fb.complete(messages)
+                except Exception as fb_exc:
+                    print(f"[Client Fallback] Fallback LLM failed: {fb_exc}")
+            raise exc
+
+    async def complete_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
+        try:
+            async for token in self._primary.complete_stream(messages):
+                yield token
+        except Exception as exc:
+            print(f"[Client Stream Fallback] Stream failed ({exc}). Retrying...")
+            for fb in self._fallbacks:
+                try:
+                    async for token in fb.complete_stream(messages):
+                        yield token
+                    return
+                except Exception as fb_exc:
+                    print(f"[Client Stream Fallback] Fallback stream failed: {fb_exc}")
+            raise exc
+
+    async def aclose(self) -> None:
+        await self._primary.aclose()
+        for fb in self._fallbacks:
+            await fb.aclose()
+
+
+def _build_raw_client(provider: str, model: str, config: AppConfig) -> LLMClient:
     if provider == "ollama":
         if config.ollama_api_key is None or config.ollama_base_url is None:
             raise LLMError("ollama credentials are not configured")
+        base_url = config.ollama_base_url.rstrip("/")
+        if not base_url.endswith("/v1"):
+            base_url = base_url + "/v1"
         return OpenAICompatibleClient(
             provider="ollama",
             model=model,
             api_key=config.ollama_api_key,
-            base_url=config.ollama_base_url,
+            base_url=base_url,
             timeout=config.llm_timeout,
         )
     if provider == "openai":
@@ -233,7 +284,7 @@ def _build_single_client(provider: str, model: str, config: AppConfig) -> LLMCli
             raise LLMError("opencode credentials are not configured")
         return OpenAICompatibleClient(
             provider="opencode",
-            model=model,
+            model=model or "deepseek-v4-flash-free",
             api_key=config.opencode_api_key,
             base_url=config.opencode_base_url,
             timeout=config.llm_timeout,
@@ -244,12 +295,64 @@ def _build_single_client(provider: str, model: str, config: AppConfig) -> LLMCli
             raise LLMError("opencode-go credentials are not configured")
         return OpenAICompatibleClient(
             provider="opencode-go",
-            model=model,
+            model=model or "deepseek-v4-pro",
             api_key=effective_key,
             base_url=config.opencode_go_base_url,
             timeout=config.llm_timeout,
         )
     raise LLMError(f"Unsupported provider: {provider}")
+
+
+def _build_single_client(provider: str, model: str, config: AppConfig) -> LLMClient:
+    primary = _build_raw_client(provider, model, config)
+    fallbacks: list[LLMClient] = []
+
+    effective_go_key = config.opencode_go_api_key or config.opencode_api_key
+    if (
+        provider != "opencode-go"
+        and effective_go_key
+        and config.opencode_go_base_url
+        and effective_go_key != "local"
+    ):
+        try:
+            fallbacks.append(
+                OpenAICompatibleClient(
+                    provider="opencode-go",
+                    model=config.opencode_go_model or "deepseek-v4-pro",
+                    api_key=effective_go_key,
+                    base_url=config.opencode_go_base_url,
+                    timeout=config.llm_timeout,
+                )
+            )
+        except Exception:
+            pass
+
+    if (
+        provider != "opencode"
+        and config.opencode_api_key
+        and config.opencode_base_url
+        and config.opencode_api_key != "local"
+    ):
+        try:
+            fallbacks.append(
+                OpenAICompatibleClient(
+                    provider="opencode",
+                    model=config.opencode_model or "deepseek-v4-flash-free",
+                    api_key=config.opencode_api_key,
+                    base_url=config.opencode_base_url,
+                    timeout=config.llm_timeout,
+                )
+            )
+        except Exception:
+            pass
+
+    if fallbacks:
+        return FallbackAwareClient(primary, fallbacks)
+    return primary
+
+
+def effective_key_present(key: str | None, base_url: str | None) -> bool:
+    return bool(key and base_url and key != "local")
 
 
 def build_agent_clients(
@@ -287,11 +390,14 @@ def build_llm_client(config: AppConfig) -> LLMClient:
             or config.ollama_base_url is None
         ):
             raise LLMError("ollama credentials are not configured")
+        base_url = config.ollama_base_url.rstrip("/")
+        if not base_url.endswith("/v1"):
+            base_url = base_url + "/v1"
         return OpenAICompatibleClient(
             provider="ollama",
             model=config.ollama_model,
             api_key=config.ollama_api_key,
-            base_url=config.ollama_base_url,
+            base_url=base_url,
             timeout=config.llm_timeout,
         )
     if config.llm_provider == "openai":

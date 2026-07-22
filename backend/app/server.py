@@ -45,6 +45,59 @@ _tasks: set[asyncio.Task[None]] = set()
 _lock: asyncio.Lock = asyncio.Lock()
 
 
+@app.get(
+    "/api/health/providers",
+    summary="LLMプロバイダー導通テスト",
+    description="設定済み各プロバイダー(OpenCode, Ollama等)の接続状態をテストする。",
+)
+async def check_provider_health() -> JSONResponse:
+    from app.llm_client import _build_raw_client
+
+    app_config = load_config()
+    results: dict[str, dict[str, str]] = {}
+
+    # 1. OpenCode Zen
+    if app_config.opencode_api_key and app_config.opencode_base_url:
+        try:
+            client = _build_raw_client("opencode", "deepseek-v4-flash-free", app_config)
+            resp = await client.complete([{"role": "user", "content": "Hi"}])
+            results["opencode"] = {"status": "ok", "response": resp.content[:30]}
+            await client.aclose()
+        except Exception as exc:
+            results["opencode"] = {"status": "error", "message": str(exc)}
+    else:
+        results["opencode"] = {"status": "unconfigured"}
+
+    # 2. OpenCode Go
+    effective_go_key = app_config.opencode_go_api_key or app_config.opencode_api_key
+    if effective_go_key and app_config.opencode_go_base_url:
+        try:
+            client = _build_raw_client("opencode-go", "deepseek-v4-pro", app_config)
+            resp = await client.complete([{"role": "user", "content": "Hi"}])
+            results["opencode-go"] = {"status": "ok", "response": resp.content[:30]}
+            await client.aclose()
+        except Exception as exc:
+            results["opencode-go"] = {"status": "error", "message": str(exc)}
+    else:
+        results["opencode-go"] = {"status": "unconfigured"}
+
+    # 3. Ollama
+    if app_config.ollama_base_url:
+        try:
+            client = _build_raw_client(
+                "ollama", app_config.ollama_model or "gemma4:12b", app_config
+            )
+            resp = await client.complete([{"role": "user", "content": "Hi"}])
+            results["ollama"] = {"status": "ok", "response": resp.content[:30]}
+            await client.aclose()
+        except Exception as exc:
+            results["ollama"] = {"status": "error", "message": str(exc)}
+    else:
+        results["ollama"] = {"status": "unconfigured"}
+
+    return JSONResponse(content={"providers": results})
+
+
 def _generate_simulation_id() -> str:
     return str(uuid.uuid4())
 

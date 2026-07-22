@@ -3,6 +3,7 @@ import type { AgentSpecInput } from "../types";
 import { PRESETS, PRESET_NAMES, type PresetName } from "../data/presets";
 import { serializeAgentsYaml } from "../lib/yaml";
 import { AgentEditorCard } from "./AgentEditorCard";
+import { fetchProviderHealth } from "../api/client";
 
 export interface AgentEditorSubmitParams {
   trigger_message: string;
@@ -46,6 +47,8 @@ export function AgentEditor({
   const [maxTurns, setMaxTurns] = useState(15);
   const [agentOrderMode, setAgentOrderMode] = useState<"fixed" | "dynamic">("fixed");
   const [dirty, setDirty] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<Record<string, { status: string; response?: string; message?: string }> | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
 
@@ -292,6 +295,44 @@ export function AgentEditor({
           >
             DOWNLOAD YAML
           </button>
+        </div>
+
+        <div className="mt-3 border-t border-slate-800 pt-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[11px] font-bold text-cyan-300">🔌 LLM接続診断 (API HEALTH)</span>
+            <button
+              type="button"
+              onClick={async () => {
+                setHealthLoading(true);
+                try {
+                  const res = await fetchProviderHealth();
+                  setHealthStatus(res.providers);
+                } catch {
+                  setHealthStatus({ error: { status: "error", message: "API接続エラー" } });
+                } finally {
+                  setHealthLoading(false);
+                }
+              }}
+              disabled={healthLoading}
+              className="px-2 py-0.5 text-[10px] font-bold rounded bg-cyan-950 border border-cyan-500/40 text-cyan-200 hover:bg-cyan-900 transition-colors"
+            >
+              {healthLoading ? "診断中..." : "接続チェック"}
+            </button>
+          </div>
+          {healthStatus && (
+            <div className="space-y-1 text-[10px] font-mono bg-slate-950 p-2 rounded border border-slate-800">
+              {Object.entries(healthStatus).map(([p, data]) => (
+                <div key={p} className="flex items-center justify-between">
+                  <span className="text-slate-400 font-bold">{p}:</span>
+                  {data.status === "ok" ? (
+                    <span className="text-emerald-400 font-bold">🟢 OK ({data.response})</span>
+                  ) : (
+                    <span className="text-amber-400 font-bold">🟡 {data.status}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>
