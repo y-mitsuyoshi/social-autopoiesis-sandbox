@@ -16,7 +16,7 @@ describe("App Integration Tests", () => {
 
   it("renders the main app elements", () => {
     render(<App />);
-    expect(screen.getByText("AUTOPOIESIS CYBERBRAIN SIMULATION")).toBeInTheDocument();
+    expect(screen.getByText("AUTOPOIESIS HUMAN AVATAR DASHBOARD")).toBeInTheDocument();
     
     // Check for the THEORY GUIDE button next to status indicators
     const theoryBtn = screen.getByTestId("theory-guide-btn");

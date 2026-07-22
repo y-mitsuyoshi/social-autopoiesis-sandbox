@@ -32,7 +32,7 @@ describe("MessageBubble", () => {
     render(<MessageBubble message={baseMessage} agent={baseAgent} isLast={true} />);
     expect(screen.getByText("経済システム")).toBeInTheDocument();
     expect(screen.getByText("テスト発言内容")).toBeInTheDocument();
-    expect(screen.getByText(/支払\/非支払/)).toBeInTheDocument();
+    expect(screen.getAllByText(/支払\/非支払/)[0]).toBeInTheDocument();
   });
 
   it("renders without agent (null)", () => {

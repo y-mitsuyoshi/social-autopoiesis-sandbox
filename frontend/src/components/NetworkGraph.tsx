@@ -543,8 +543,8 @@ function NetworkGraphBase({
         RESET VIEW
       </button>
       {onViewModeChange && (
-        <div className="absolute left-2 top-2 flex gap-1 text-sm">
-          {(["network", "debate"] as const).map((m) => (
+        <div className="absolute left-2 top-2 flex gap-1 text-sm z-20">
+          {(["network", "debate", "roundtable"] as const).map((m) => (
             <button
               key={m}
               type="button"
@@ -552,11 +552,11 @@ function NetworkGraphBase({
               onClick={() => onViewModeChange(m)}
               className={
                 viewMode === m
-                  ? "border border-cyberpunk-accent px-2 py-1 text-cyberpunk-accent"
-                  : "border border-cyberpunk-neon/30 px-2 py-1 text-cyberpunk-text/60"
+                  ? "border border-amber-400 bg-amber-400/20 px-2 py-1 text-amber-300 font-bold rounded"
+                  : "border border-slate-700 bg-slate-900/80 px-2 py-1 text-slate-400 hover:text-slate-200 rounded"
               }
             >
-              {m === "network" ? "NETWORK" : "DEBATE"}
+              {m === "network" ? "NETWORK" : m === "debate" ? "DEBATE" : "🗣️ 人間アバター対話"}
             </button>
           ))}
         </div>

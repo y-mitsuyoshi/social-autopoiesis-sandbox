@@ -120,4 +120,19 @@ export interface DebateArrow {
   turn: number;
 }
 
-export type NetworkViewMode = "network" | "debate";
+export type AvatarTheme = "cyberpunk" | "human" | "animal";
+
+export interface HumanPersona {
+  id: string;
+  realName: string;
+  roleTitle: string;
+  avatarColor: string;
+  avatarGradient: string;
+  plainCodeExplanation: string;
+  positiveMeaning: string;
+  negativeMeaning: string;
+  bio: string;
+  avatarSvgType: "lawyer" | "executive" | "scientist" | "politician" | "journalist" | "sociologist" | "cyborg_officer" | "cyber_dog" | "think_tank" | "cyber_owl" | "cyber_fox";
+}
+
+export type NetworkViewMode = "network" | "debate" | "roundtable" | "society";

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MotionConfig } from "framer-motion";
 import { TimelineList } from "./components/TimelineList";
 import { NetworkGraph, buildEdges } from "./components/NetworkGraph";
+import { RoundtableStage } from "./components/RoundtableStage";
 import { SocietyPanel } from "./components/SocietyPanel";
 import { StatsPanel } from "./components/StatsPanel";
 import { GlitchText } from "./components/GlitchText";
@@ -9,7 +10,11 @@ import { AgentEditor, type AgentEditorSubmitParams } from "./components/AgentEdi
 import { SpeakCountChart } from "./components/SpeakCountChart";
 import { BinaryCodeGauge } from "./components/BinaryCodeGauge";
 import { EducationalPanel } from "./components/EducationalPanel";
+import { LuhmannTeacherPanel } from "./components/LuhmannTeacherPanel";
+import { AvatarDetailModal } from "./components/AvatarDetailModal";
 import { AnalysisPanel } from "./components/AnalysisPanel";
+import { AutopoiesisGraphPanel } from "./components/AutopoiesisGraphPanel";
+import { RealtimeCyberMetrics } from "./components/RealtimeCyberMetrics";
 import {
   fetchSimulationLogs,
   openSimulationSocket,
@@ -20,6 +25,7 @@ import { PRESETS } from "./data/presets";
 import type {
   AgentNode,
   AgentSpecInput,
+  AvatarTheme,
   Message,
   NetworkViewMode,
   SimulationStatus,
@@ -41,7 +47,13 @@ export default function App() {
   );
   const [presetName, setPresetName] = useState<string>("agents-5");
   const [eduOpen, setEduOpen] = useState(false);
-  const [networkViewMode, setNetworkViewMode] = useState<NetworkViewMode>("network");
+  const [teacherOpen, setTeacherOpen] = useState(false);
+  const [eli5Mode, setEli5Mode] = useState(true);
+  const [avatarTheme, setAvatarTheme] = useState<AvatarTheme>("cyberpunk");
+  const [selectedAvatarModal, setSelectedAvatarModal] = useState<AgentNode | null>(null);
+  const [networkViewMode, setNetworkViewMode] = useState<NetworkViewMode>("roundtable");
+  const [centerGraphTab, setCenterGraphTab] = useState<"metrics" | "speak">("metrics");
+
   const wsRef = useRef<WebSocket | null>(null);
   const statusRef = useRef<SimulationStatus>(status);
   statusRef.current = status;
@@ -223,31 +235,87 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="relative min-h-screen p-3 text-cyberpunk-text">
-        <header className="mb-4 flex flex-col border-b border-cyberpunk-neon/30 pb-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="relative min-h-screen p-3 bg-slate-950 text-slate-100 font-sans">
+        {/* Header Bar */}
+        <header className="mb-4 flex flex-col border-b border-slate-800 pb-3 sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex flex-col">
-            <div className="text-sm font-bold tracking-[0.25em] text-cyberpunk-accent">
-              SECTION 9 SECURITY PROTOCOL // DIRECT NEURAL CONNECTION
+            <div className="text-xs font-bold tracking-[0.2em] text-amber-400">
+              SOCIAL AUTOPOIESIS SIMULATOR // ルーマン社会システム実験室
             </div>
             <GlitchText
               as="h1"
-              text="AUTOPOIESIS CYBERBRAIN SIMULATION"
-              className="text-base font-extrabold tracking-[0.15em] text-cyberpunk-neon sm:text-lg"
+              text="AUTOPOIESIS HUMAN AVATAR DASHBOARD"
+              className="text-base font-extrabold tracking-[0.1em] text-indigo-400 sm:text-lg"
             />
           </div>
-          <div className="mt-2 flex items-center gap-3 text-sm sm:mt-0">
-            <span className="flex items-center gap-1.5 border border-cyberpunk-neon/30 bg-cyberpunk-neon/10 px-2 py-0.5 text-cyberpunk-neon">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyberpunk-neon" />
-              NET: ACTIVE
-            </span>
-            <span className="flex items-center gap-1.5 border border-cyberpunk-accent/30 bg-cyberpunk-accent/10 px-2 py-0.5 text-cyberpunk-accent">
-              <span className="h-1.5 w-1.5 animate-ping rounded-full bg-cyberpunk-accent" />
-              SIM STATUS: {status.toUpperCase()}
-            </span>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            {/* Avatar Theme Switcher (Cyberpunk / Human / Animal) */}
+            <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => setAvatarTheme("cyberpunk")}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+                  avatarTheme === "cyberpunk"
+                    ? "bg-indigo-600 text-white shadow"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                🦾 攻殻サイバー風
+              </button>
+              <button
+                type="button"
+                onClick={() => setAvatarTheme("animal")}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+                  avatarTheme === "animal"
+                    ? "bg-emerald-600 text-white shadow"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                🐶 アニマル犬/AI
+              </button>
+              <button
+                type="button"
+                onClick={() => setAvatarTheme("human")}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+                  avatarTheme === "human"
+                    ? "bg-purple-600 text-white shadow"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                👨‍💼 人間プロ
+              </button>
+            </div>
+
+            {/* ELI5 Beginner Mode Switch */}
+            <button
+              type="button"
+              onClick={() => setEli5Mode((prev) => !prev)}
+              className={`px-3 py-1.5 rounded-lg font-bold border transition-all flex items-center gap-1.5 shadow-md ${
+                eli5Mode
+                  ? "bg-amber-500/20 border-amber-400 text-amber-300 hover:bg-amber-500/30"
+                  : "bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <span>💡</span>
+              <span>初心者解説: {eli5Mode ? "ON" : "OFF"}</span>
+            </button>
+
+            {/* Teacher Luhmann Live Guide */}
+            <button
+              type="button"
+              onClick={() => setTeacherOpen(true)}
+              className="px-3 py-1.5 rounded-lg font-bold bg-purple-950/80 border border-purple-500/50 text-purple-200 hover:bg-purple-900/90 transition-all flex items-center gap-1.5 shadow-md"
+            >
+              <span>🎓</span>
+              <span>ルマン先生ガイド</span>
+            </button>
+
+            {/* Theory Index Guide Button */}
             <button
               type="button"
               onClick={() => setEduOpen(true)}
-              className="border border-cyberpunk-neon bg-cyberpunk-neon/10 px-2.5 py-1 text-sm text-cyberpunk-neon hover:bg-cyberpunk-neon/20 transition-all font-mono"
+              className="px-3 py-1.5 rounded-lg font-bold bg-indigo-950/80 border border-indigo-500/50 text-indigo-200 hover:bg-indigo-900/90 transition-all font-mono"
               data-testid="theory-guide-btn"
             >
               THEORY GUIDE
@@ -259,24 +327,24 @@ export default function App() {
         <div className="mb-4">
           {society.isOperationalClosure ? (
             <div
-              className="flex items-center justify-center border border-emerald-500/50 bg-emerald-500/10 p-3 rounded font-mono text-center font-bold tracking-[0.2em] text-emerald-400 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+              className="flex items-center justify-center border border-emerald-500/50 bg-emerald-950/30 p-3 rounded-xl font-mono text-center font-bold tracking-[0.15em] text-emerald-400 animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.15)]"
               data-testid="autopoiesis-status"
             >
-              AUTOPOIESIS PROVEN
+              ✨ AUTOPOIESIS PROVEN // 自己再生作動成立（会話が自律増殖中）
             </div>
           ) : (
             <div
-              className="flex items-center justify-center border border-yellow-500/50 bg-yellow-500/10 p-3 rounded font-mono text-center font-bold tracking-[0.1em] text-yellow-500"
+              className="flex items-center justify-center border border-amber-500/40 bg-amber-950/20 p-3 rounded-xl font-mono text-center font-bold tracking-[0.05em] text-amber-400"
               data-testid="autopoiesis-status"
             >
-              UNPROVEN / OPERATIONAL CLOSURE INCOMPLETE
+              ⏳ UNPROVEN / OPERATIONAL CLOSURE INCOMPLETE （作動的閉鎖 蓄積中）
             </div>
           )}
         </div>
 
         {error && (
           <div
-            className="mb-3 border border-cyberpunk-danger bg-cyberpunk-danger/10 p-2 text-sm text-cyberpunk-danger"
+            className="mb-3 border border-rose-500/50 bg-rose-950/30 p-3 rounded-xl text-xs text-rose-300"
             role="alert"
           >
             <GlitchText as="span" text="ERROR" /> : {error}
@@ -284,6 +352,7 @@ export default function App() {
         )}
 
         <div className="grid gap-3 lg:grid-cols-[320px_1fr_360px]">
+          {/* Left Panel: Editor & Society Metrics */}
           <aside className="space-y-3">
             <AgentEditor
               specs={agentSpecs}
@@ -303,65 +372,145 @@ export default function App() {
             />
           </aside>
 
+          {/* Center Stage: Roundtable / Network View & Speak Chart / Cyber Metrics & Timeline */}
           <main className="flex min-h-0 flex-col gap-3">
             <section
-              className="hud-panel relative rounded p-2"
-              style={{ height: 420 }}
+              className="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-800"
+              style={{ minHeight: 480 }}
               aria-label="network"
             >
-              <NetworkGraph
-                agents={agentsWithState}
-                edges={edges}
-                currentSpeaker={currentSpeaker}
-                nextSpeaker={nextSpeaker}
-                messages={messages}
-                viewMode={networkViewMode}
-                onViewModeChange={setNetworkViewMode}
-              />
+              {networkViewMode === "roundtable" ? (
+                <RoundtableStage
+                  agents={agentsWithState}
+                  messages={messages}
+                  currentSpeaker={currentSpeaker}
+                  nextSpeaker={nextSpeaker}
+                  eli5Mode={eli5Mode}
+                  onSelectAgent={(agent) => setSelectedAvatarModal(agent)}
+                />
+              ) : (
+                <NetworkGraph
+                  agents={agentsWithState}
+                  edges={edges}
+                  currentSpeaker={currentSpeaker}
+                  nextSpeaker={nextSpeaker}
+                  messages={messages}
+                  viewMode={networkViewMode}
+                  onViewModeChange={setNetworkViewMode}
+                />
+              )}
+
+              {/* View Mode Switcher Header Bar inside Center Panel */}
+              <div className="absolute top-3 left-3 z-30 flex items-center gap-1 bg-slate-950/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => setNetworkViewMode("roundtable")}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    networkViewMode === "roundtable"
+                      ? "bg-amber-500 text-slate-950 shadow-md"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  🗣️ アバター対話
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNetworkViewMode("network")}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    networkViewMode === "network"
+                      ? "bg-indigo-600 text-white shadow-md"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  🕸️ ネットワーク相関
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNetworkViewMode("debate")}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    networkViewMode === "debate"
+                      ? "bg-indigo-600 text-white shadow-md"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  ⚔️ 討論フロー
+                </button>
+              </div>
+
               {currentSpeaker && agents[currentSpeaker] && messages.length > 0 && (
-                <div className="absolute bottom-2 left-2 w-48 z-10 pointer-events-auto" data-testid="app-binary-gauge-container">
+                <div className="absolute bottom-3 left-3 w-56 z-20 pointer-events-auto" data-testid="app-binary-gauge-container">
                   <BinaryCodeGauge
                     binaryCode={agents[currentSpeaker].binaryCode}
                     messageText={messages[messages.length - 1].message}
                   />
                 </div>
               )}
-              {status === "completed" && (
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <GlitchText
-                    as="div"
-                    text="SIMULATION COMPLETE"
-                    className="text-lg tracking-widest text-cyberpunk-accent"
+            </section>
+
+            {/* Real-time Cyber Metrics & Speak Count Toggle Section */}
+            <section
+              className="hud-panel rounded-2xl p-3 bg-slate-900 border border-slate-800"
+              aria-label="speak-count-chart"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setCenterGraphTab("metrics")}
+                    className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                      centerGraphTab === "metrics"
+                        ? "bg-cyan-500 text-slate-950 shadow"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    ✨ リアルタイム・サイバーメトリクス (波形/極性/熱分布)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCenterGraphTab("speak")}
+                    className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                      centerGraphTab === "speak"
+                        ? "bg-indigo-600 text-white shadow"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    📊 発言回数分布 (SPEAK COUNT)
+                  </button>
+                </div>
+              </div>
+
+              {centerGraphTab === "metrics" ? (
+                <RealtimeCyberMetrics
+                  messages={messages}
+                  agents={agentsWithState}
+                  currentSpeaker={currentSpeaker}
+                />
+              ) : (
+                <div style={{ height: 180 }}>
+                  <SpeakCountChart
+                    messages={messages}
+                    agents={agentsWithState}
+                    maxTurns={maxTurns}
                   />
                 </div>
               )}
             </section>
+
             <section
-              className="hud-panel rounded p-2"
-              style={{ height: 200 }}
-              aria-label="speak-count-chart"
-            >
-              <h2 className="mb-1 text-xs text-cyberpunk-neon neon-glow">
-                SPEAK COUNT
-              </h2>
-              <div style={{ height: 160 }}>
-                <SpeakCountChart
-                  messages={messages}
-                  agents={agentsWithState}
-                  maxTurns={maxTurns}
-                />
-              </div>
-            </section>
-            <section
-              className="hud-panel flex min-h-0 flex-1 flex-col rounded p-2"
-              style={{ height: 360 }}
+              className="hud-panel flex min-h-0 flex-1 flex-col rounded-2xl p-3 bg-slate-900 border border-slate-800"
+              style={{ height: 380 }}
               aria-label="timeline"
             >
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-xs text-cyberpunk-neon neon-glow">
-                  TIMELINE
+                <h2 className="text-xs font-bold text-indigo-300 tracking-wide flex items-center gap-1.5">
+                  <span>💬 対話タイムライン (TIMELINE)</span>
+                  {eli5Mode && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/30 text-amber-300">
+                      かみくだく解説付き
+                    </span>
+                  )}
                 </h2>
-                <div className="flex gap-1 text-sm">
+                <div className="flex gap-1 text-xs">
                   {(["S", "M", "L"] as const).map((z) => (
                     <button
                       key={z}
@@ -369,8 +518,8 @@ export default function App() {
                       onClick={() => setTimelineZoom(z)}
                       className={
                         timelineZoom === z
-                          ? "border border-cyberpunk-accent px-1 text-cyberpunk-accent"
-                          : "border border-cyberpunk-neon/30 px-1 text-cyberpunk-text/60"
+                          ? "border border-amber-400 bg-amber-400/20 px-2 py-0.5 text-amber-300 font-bold rounded"
+                          : "border border-slate-800 px-2 py-0.5 text-slate-400 hover:text-slate-200 rounded"
                       }
                     >
                       {z}
@@ -389,7 +538,13 @@ export default function App() {
             </section>
           </main>
 
+          {/* Right Panel: Autopoiesis Graph Analytics & Stats */}
           <aside className="space-y-3">
+            <AutopoiesisGraphPanel
+              metrics={society}
+              messages={messages}
+              agents={agentsWithState}
+            />
             <StatsPanel
               stats={stats}
               status={status}
@@ -404,7 +559,20 @@ export default function App() {
           </aside>
         </div>
       </div>
+
+      {/* Modals & Panels */}
       <EducationalPanel isOpen={eduOpen} onClose={() => setEduOpen(false)} />
+      <LuhmannTeacherPanel
+        isOpen={teacherOpen}
+        onClose={() => setTeacherOpen(false)}
+        lastMessage={messages.length > 0 ? messages[messages.length - 1] : null}
+        turnCount={messages.length}
+      />
+      <AvatarDetailModal
+        agent={selectedAvatarModal}
+        lastMessage={messages.length > 0 ? messages[messages.length - 1] : null}
+        onClose={() => setSelectedAvatarModal(null)}
+      />
     </MotionConfig>
   );
 }
@@ -419,12 +587,12 @@ function LogsReload({
   const [simulationId, setSimulationId] = useState("");
   const canLoad = simulationId.trim().length > 0 && !disabled;
   return (
-    <section className="hud-panel rounded p-3" aria-label="logs-reload">
-      <h2 className="mb-2 text-xs text-cyberpunk-neon neon-glow">LOGS RELOAD</h2>
+    <section className="hud-panel rounded-2xl p-3 bg-slate-900 border border-slate-800" aria-label="logs-reload">
+      <h2 className="mb-2 text-xs font-bold text-indigo-300">📁 過去ログ読み込み (LOGS RELOAD)</h2>
       <div className="flex gap-2">
         <input
           aria-label="simulation-id"
-          className="flex-1 border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-2 text-sm text-cyberpunk-text outline-none focus:border-cyberpunk-accent"
+          className="flex-1 border border-slate-700 bg-slate-950 p-2 text-xs text-slate-100 rounded-xl outline-none focus:border-indigo-400"
           value={simulationId}
           onChange={(e) => setSimulationId(e.target.value)}
           placeholder="過去シミュレーションID"
@@ -435,7 +603,7 @@ function LogsReload({
           aria-label="load-logs"
           disabled={!canLoad}
           onClick={() => onLoadLogs(simulationId.trim())}
-          className="border border-cyberpunk-accent px-2 py-1 text-sm text-cyberpunk-accent disabled:opacity-40"
+          className="border border-indigo-500 bg-indigo-600/30 px-3 py-1 text-xs font-bold text-indigo-200 rounded-xl hover:bg-indigo-600/50 disabled:opacity-40 transition-colors"
         >
           LOAD
         </button>
