@@ -180,6 +180,7 @@ export default function App() {
         agents_inline: params.agents_inline,
       });
       wsRef.current?.close();
+      let wsOpened = false;
       wsRef.current = openSimulationSocket(
         resp.simulation_id,
         (m) => {
@@ -199,10 +200,18 @@ export default function App() {
             setError("simulation not found");
           }
         },
-        undefined,
+        () => {
+          wsOpened = true;
+        },
         () => {
           if (statusRef.current === "running") {
             setStatus("completed");
+          }
+        },
+        () => {
+          if (!wsOpened && statusRef.current === "running") {
+            setStatus("failed");
+            setError("WebSocket接続に失敗しました。バックエンドが起動しているか確認してください。");
           }
         },
       );

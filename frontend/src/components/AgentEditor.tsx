@@ -322,12 +322,17 @@ export function AgentEditor({
           {healthStatus && (
             <div className="space-y-1 text-[10px] font-mono bg-slate-950 p-2 rounded border border-slate-800">
               {Object.entries(healthStatus).map(([p, data]) => (
-                <div key={p} className="flex items-center justify-between">
-                  <span className="text-slate-400 font-bold">{p}:</span>
-                  {data.status === "ok" ? (
-                    <span className="text-emerald-400 font-bold">🟢 OK ({data.response})</span>
-                  ) : (
-                    <span className="text-amber-400 font-bold">🟡 {data.status}</span>
+                <div key={p} className="flex flex-col">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 font-bold">{p}:</span>
+                    {data.status === "ok" ? (
+                      <span className="text-emerald-400 font-bold">🟢 OK ({data.response})</span>
+                    ) : (
+                      <span className="text-amber-400 font-bold">🟡 {data.status}</span>
+                    )}
+                  </div>
+                  {data.message && (
+                    <span className="text-rose-300/80 text-[9px] break-all mt-0.5">{data.message}</span>
                   )}
                 </div>
               ))}

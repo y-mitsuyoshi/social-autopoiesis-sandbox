@@ -73,6 +73,7 @@ export function openSimulationSocket(
   onEvent: (e: { event: string; error?: string | null }) => void,
   onOpen?: () => void,
   onClose?: () => void,
+  onError?: (e: unknown) => void,
 ): WebSocket {
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
   const url = `${proto}//${window.location.host}/ws/simulations/${simulationId}`;
@@ -93,6 +94,9 @@ export function openSimulationSocket(
       void _error;
       onMessage(rest);
     }
+  };
+  ws.onerror = (e) => {
+    onError?.(e);
   };
   ws.onclose = () => {
     onClose?.();

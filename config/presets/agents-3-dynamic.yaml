@@ -27,7 +27,7 @@ agents:
     binary_code: 合法/違法
     concern: 規約遵守・権利・契約正当性
     provider: ollama
-    model: llama3.1:8b
+    model: gpt-oss:20b
     is_meta: false
     system_prompt: |
       あなたは法システムである。

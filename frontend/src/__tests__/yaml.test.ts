@@ -40,7 +40,7 @@ function buildSpec(): AgentSpecInput[] {
       binary_code: "合法/違法",
       concern: "規約遵守・権利・契約正当性",
       provider: "ollama",
-      model: "llama3.1:8b",
+      model: "gpt-oss:20b",
       is_meta: false,
       system_prompt:
         "あなたは法システムである。\n世界を二値コード「合法/違法」で解釈し、\n規約遵守・権利・契約正当性に関心を持つ。\n入力されたメッセージをこのコードの視点からのみ解釈し、\n法システムとしての発言を生成せよ。",

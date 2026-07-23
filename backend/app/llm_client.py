@@ -47,7 +47,16 @@ async def retry_async(
     while attempt < max_attempts:
         try:
             return await func()
-        except (httpx.HTTPStatusError, httpx.RequestError) as exc:
+        except httpx.HTTPStatusError as exc:
+            last_exc = exc
+            attempt += 1
+            if attempt >= max_attempts:
+                break
+            if exc.response.status_code in (400, 401, 403, 404, 422):
+                break
+            delay = base_delay * (2 ** (attempt - 1))
+            await asyncio.sleep(delay)
+        except httpx.RequestError as exc:
             last_exc = exc
             attempt += 1
             if attempt >= max_attempts:
@@ -55,7 +64,7 @@ async def retry_async(
             delay = base_delay * (2 ** (attempt - 1))
             await asyncio.sleep(delay)
     assert last_exc is not None
-    raise LLMError(f"LLM request failed after {max_attempts} attempts", last_exc) from last_exc
+    raise LLMError(f"LLM request failed after {attempt} attempts", last_exc) from last_exc
 
 
 class OpenAICompatibleClient:
