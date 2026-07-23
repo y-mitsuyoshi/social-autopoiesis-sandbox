@@ -63,36 +63,10 @@ body::before {
   }
 }
 
-@keyframes glitch-shift {
-  0%,
-  100% {
-    transform: translate(0, 0);
-    text-shadow:
-      0 0 4px rgba(0, 229, 255, 0.7),
-      0 0 12px rgba(0, 229, 255, 0.4);
-  }
-  20% {
-    transform: translate(-1px, 1px);
-    text-shadow:
-      2px 0 rgba(255, 42, 109, 0.7),
-      -2px 0 rgba(57, 255, 20, 0.7);
-  }
-  40% {
-    transform: translate(1px, -1px);
-    text-shadow:
-      -2px 0 rgba(255, 42, 109, 0.7),
-      2px 0 rgba(57, 255, 20, 0.7);
-  }
-  60% {
-    transform: translate(0, 0);
-    text-shadow:
-      0 0 8px rgba(0, 229, 255, 0.9),
-      0 0 20px rgba(0, 229, 255, 0.5);
-  }
-}
-
 .glitch-text {
-  animation: glitch-shift 2.4s infinite steps(8, end);
+  text-shadow:
+    0 0 6px rgba(0, 229, 255, 0.6),
+    0 0 16px rgba(0, 229, 255, 0.3);
 }
 
 .neon-glow {

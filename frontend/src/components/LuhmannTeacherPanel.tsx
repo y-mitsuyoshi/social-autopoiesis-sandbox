@@ -183,25 +183,52 @@ export const LuhmannTeacherPanel: React.FC<LuhmannTeacherPanelProps> = ({
                 Q1. なぜ「人間」ではなく「社会システム」が主役なの？
               </h4>
               <p className="text-slate-300 leading-relaxed">
-                ルーマン理論では、社会を作り上げている最小単位は「人間」ではなく「コミュニケーション（会話・情報伝達）」であると考えます。人間が去っても、会社や法律や市場というコミュニケーションは動き続けるからです。
+                ルーマン社会システム論の最大の革新は、「社会の主役は人間個人ではなくコミュニケーションである」と捉えた点です。人間が交替しても、法律、経済市場、科学研究、政治決定という【会話と意味の連鎖】は社会の中で独立して自律作動し続けるからです。
               </p>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700">
               <h4 className="font-bold text-purple-300 mb-1">
-                Q2. オートポイエーシスってどういう意味？
+                Q2. オートポイエーシス（自己再生）ってどういう意味？
               </h4>
               <p className="text-slate-300 leading-relaxed">
-                もともと生物学で「細胞が自ら新しい細胞を作って生き続ける仕組み」を指す言葉です。社会システムも同様に、「会話が次の会話を生み出して生き続ける」ため、オートポイエーシスと呼ばれます。
+                元々は生命科学で「細胞が自らの要素（タンパク質など）を自分で作り出して生き続ける」ことを指します。社会システムも同様に、「会話が次の会話を生み出し、システム独自のルールを更新しながら永遠に続き自立する」ため、オートポイエーシス（作動的閉鎖）と呼ばれます。
               </p>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700">
               <h4 className="font-bold text-purple-300 mb-1">
-                Q3. 画面の「〇/✕」ゲージは何を表しているの？
+                Q3. 画面の二値コード（合法/違法、支払/非支払）って何？
               </h4>
               <p className="text-slate-300 leading-relaxed">
-                各システムが発言した際に「肯定的なコード（合法・真・支払可能など）」と「否定的なコード（違法・偽・支払不能など）」のどちらで評価されたかのバランスを示しています。
+                各社会システムが世界を観察するための「専用のメガネ（二極のものさし）」です。法システムは「合法か違法か」、経済システムは「支払か非支払か」、科学システムは「真か偽か」という二元レンズだけを使って外界のあらゆる出来事を評価します。
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700">
+              <h4 className="font-bold text-purple-300 mb-1">
+                Q4. 言葉が通じない異システム同士がどうやって影響し合うの？（構造的結合）
+              </h4>
+              <p className="text-slate-300 leading-relaxed">
+                これをルーマンは「構造的結合（Structural Coupling）」と呼びます。法システムが経済のルールを直接指示することはできませんが、経済システムは法システムからの「違法判決」という刺激（ノイズ）を受けて、自らのルールで「支払中止・違約金」へと自己応答します。相手を直接動かすのではなく、刺激を通して自律反応を引き起こし合う関係です。
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700">
+              <h4 className="font-bold text-purple-300 mb-1">
+                Q5. 人間の「心（意識）」と社会の「会話」は別物なの？
+              </h4>
+              <p className="text-slate-300 leading-relaxed">
+                はい、全く別個のシステムです。人間の意識（心理システム）は頭の中の思考を再生し、社会（社会システム）は言葉と意味を再生します。意識は社会の「環境」として外側に位置し、社会にエネルギーと刺激を与える存在と捉えます。
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700">
+              <h4 className="font-bold text-purple-300 mb-1">
+                Q6. シミュレーションが完了したとき、何が達成されたの？
+              </h4>
+              <p className="text-slate-300 leading-relaxed">
+                外部からの刺激（お題）に応答して、各システムが自らの物差し（コード）で会話を他者に連鎖させ、ネットワーク全体で一巡する回路（作動的閉鎖）が形成されたことを意味します。会話が会話を呼び、社会が自律して回った証拠です。
               </p>
             </div>
           </div>

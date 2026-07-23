@@ -50,8 +50,8 @@ export const HumanAvatar: React.FC<HumanAvatarProps> = ({
             <circle cx="50" cy="40" r="17" fill="#fed7aa" />
             {/* Dark Purple Short Hair */}
             <path d="M30 36 C 30 18, 70 18, 70 36 C 65 24, 35 24, 30 36 Z" fill="#4c1d95" />
-            {/* Glowing Red Cyber Eye Visor */}
-            <rect x="36" y="38" width="28" height="6" rx="3" fill="#ef4444" className="animate-pulse" />
+            {/* Glowing Cyber Eye Visor */}
+            <rect x="36" y="38" width="28" height="6" rx="3" fill="#ef4444" />
             <circle cx="44" cy="41" r="1.5" fill="#fef08a" />
             <circle cx="56" cy="41" r="1.5" fill="#fef08a" />
             {/* Cyber Neck Connector Nodes */}
@@ -202,18 +202,18 @@ export const HumanAvatar: React.FC<HumanAvatarProps> = ({
     >
       <div className="relative">
         {state === "speaking" && (
-          <div className="absolute -inset-2.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-75 blur-md animate-pulse" />
+          <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-indigo-500 opacity-60 blur-sm" />
         )}
         {state === "thinking" && (
-          <div className="absolute -inset-1.5 rounded-full bg-amber-400 opacity-50 blur-sm animate-ping" />
+          <div className="absolute -inset-1.5 rounded-full bg-amber-400 opacity-40 blur-xs" />
         )}
 
         <div
           className={`relative ${sizeClasses} rounded-full overflow-hidden border-2 transition-all duration-300 shadow-lg bg-gradient-to-br ${persona.avatarGradient} ${
             state === "speaking"
-              ? "border-amber-300 scale-105 ring-4 ring-indigo-400/40"
+              ? "border-amber-300 scale-105 ring-4 ring-amber-400/50"
               : state === "thinking"
-              ? "border-amber-400 opacity-90 ring-2 ring-amber-300/30"
+              ? "border-amber-400 opacity-90 ring-2 ring-amber-300/40"
               : "border-slate-700/60 group-hover:border-indigo-400 group-hover:scale-105"
           }`}
           style={{ borderColor: persona.avatarColor }}
@@ -222,23 +222,23 @@ export const HumanAvatar: React.FC<HumanAvatarProps> = ({
 
           {state === "speaking" && (
             <div className="absolute bottom-1 left-0 right-0 flex items-end justify-center space-x-0.5 h-3 px-2 bg-black/40 backdrop-blur-[1px]">
-              <span className="w-1 bg-amber-300 rounded-full animate-[bounce_0.6s_infinite_100ms] h-2" />
-              <span className="w-1 bg-amber-400 rounded-full animate-[bounce_0.6s_infinite_300ms] h-3" />
-              <span className="w-1 bg-amber-200 rounded-full animate-[bounce_0.6s_infinite_200ms] h-2.5" />
-              <span className="w-1 bg-amber-400 rounded-full animate-[bounce_0.6s_infinite_400ms] h-1.5" />
+              <span className="w-1 bg-amber-300 rounded-full h-2" />
+              <span className="w-1 bg-amber-400 rounded-full h-3" />
+              <span className="w-1 bg-amber-200 rounded-full h-2.5" />
+              <span className="w-1 bg-amber-400 rounded-full h-1.5" />
             </div>
           )}
         </div>
 
         {state === "thinking" && (
-          <div className="absolute -top-3 -right-2 px-2 py-0.5 bg-amber-500 text-slate-950 font-bold text-[10px] rounded-full shadow-md animate-bounce flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping" />
+          <div className="absolute -top-3 -right-2 px-2 py-0.5 bg-amber-500 text-slate-950 font-bold text-[10px] rounded-full shadow-md flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />
             思考中…
           </div>
         )}
 
         {state === "speaking" && (
-          <div className="absolute -top-3 -right-2 px-2 py-0.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-[10px] rounded-full shadow-md animate-pulse">
+          <div className="absolute -top-3 -right-2 px-2 py-0.5 bg-amber-400 text-slate-950 font-bold text-[10px] rounded-full shadow-md">
             発言中 🎙️
           </div>
         )}

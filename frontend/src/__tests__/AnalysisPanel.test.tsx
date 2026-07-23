@@ -133,6 +133,6 @@ describe("AnalysisPanel", () => {
     expect(
       screen.getByText("AUTOPOIESIS SCORE / オートポイエーシス度"),
     ).toBeInTheDocument();
-    expect(screen.getByText(/次フェーズで実装予定/)).toBeInTheDocument();
+    expect(screen.getByText(/社会システム総合分析/)).toBeInTheDocument();
   });
 });

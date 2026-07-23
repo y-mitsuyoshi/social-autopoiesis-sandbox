@@ -172,9 +172,34 @@ export function AnalysisPanel({
         </dl>
       </div>
 
-      <div className="border border-cyberpunk-neon/20 bg-cyberpunk-bg/50 p-2 text-sm text-cyberpunk-text/60">
-        <h3 className="mb-1 text-sm text-cyberpunk-neon">LLM COMMENTARY</h3>
-        <p>次フェーズで実装予定（LLM による考察サマリー）</p>
+      {/* Comprehensive Luhmann Autopoiesis Theory Commentary */}
+      <div className="border border-indigo-500/40 bg-indigo-950/40 p-3 rounded-xl text-xs space-y-2">
+        <div className="flex items-center justify-between font-bold text-amber-300 border-b border-indigo-500/30 pb-1">
+          <span>🎓 社会システム総合分析（ルーマン理論考察）</span>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900 text-indigo-200">
+            AUTOPOIESIS ANALYSIS
+          </span>
+        </div>
+        <p className="text-slate-200 leading-relaxed font-sans">
+          本シミュレーション（全 {messages.length} ターン）において、外部の人間個人の心理介入を受けることなく、社会システム群（{agentNames.join("・")}）が互いの発言を「自己の二元コード」に翻訳し合いながら自律再生（オートポイエーシス）を遂行しました。
+        </p>
+        <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 space-y-1.5 text-[11px] text-slate-300">
+          <div className="font-semibold text-indigo-300">📌 考察のハイライト:</div>
+          <div className="flex items-start gap-1.5">
+            <span className="text-amber-400">・</span>
+            <span>
+              <strong>作動的閉鎖の証明 (Score: {(analysis.autopoiesis.totalScore * 100).toFixed(0)}%):</strong>{" "}
+              最も影響力の高かった【{analysis.dominance[0]?.name || "主要システム"}】を筆頭に、各システムは他者の言葉をそのまま受容せず、自身のコードへ非対称に変換（構造的結合）して発話を連続させました。
+            </span>
+          </div>
+          <div className="flex items-start gap-1.5">
+            <span className="text-amber-400">・</span>
+            <span>
+              <strong>二元コードの自己創出:</strong>{" "}
+              法（合法/違法）と経済（支払/非支払）などの視点が対立しながらも、コミュニケーションが会話自体を資源として循環する「自律増殖回路」が成立しました。
+            </span>
+          </div>
+        </div>
       </div>
     </section>
   );

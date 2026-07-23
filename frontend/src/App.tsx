@@ -332,11 +332,34 @@ export default function App() {
           </div>
         </header>
 
-        {/* AUTOPOIESIS PROOF STATUS */}
-        <div className="mb-4">
+        {/* AUTOPOIESIS PROOF STATUS & SIMULATION COMPLETION BANNER */}
+        <div className="mb-4 space-y-2">
+          {status === "completed" && (
+            <div className="flex flex-col sm:flex-row items-center justify-between border-2 border-indigo-500/80 bg-indigo-950/70 p-3.5 rounded-xl text-center sm:text-left shadow-[0_0_25px_rgba(99,102,241,0.3)]">
+              <div className="flex items-center gap-2 mb-1 sm:mb-0">
+                <span className="text-xl">🎉</span>
+                <div>
+                  <div className="text-sm font-bold text-indigo-200 tracking-wide">
+                    シミュレーション完了 (SIMULATION COMPLETED)
+                  </div>
+                  <div className="text-xs text-indigo-300">
+                    全 {messages.length} ターンの議論が完了しました。全体の総合考察は右下の「社会システム総合分析」パネルで確認できます。
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTeacherOpen(true)}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-all shadow"
+              >
+                🎓 ルマン先生の総括解説を読む
+              </button>
+            </div>
+          )}
+
           {society.isOperationalClosure ? (
             <div
-              className="flex items-center justify-center border border-emerald-500/50 bg-emerald-950/30 p-3 rounded-xl font-mono text-center font-bold tracking-[0.15em] text-emerald-400 animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+              className="flex items-center justify-center border border-emerald-500/50 bg-emerald-950/40 p-3 rounded-xl font-mono text-center font-bold tracking-[0.15em] text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
               data-testid="autopoiesis-status"
             >
               ✨ AUTOPOIESIS PROVEN // 自己再生作動成立（会話が自律増殖中）

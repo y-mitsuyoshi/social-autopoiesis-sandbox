@@ -100,7 +100,7 @@ export const RealtimeCyberMetrics: React.FC<RealtimeCyberMetricsProps> = ({
       {/* Header & Mode Switcher */}
       <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+          <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
           <h2 className="text-xs font-bold text-cyan-300 tracking-wide flex items-center gap-1.5">
             <span>✨ リアルタイム・サイバーメトリクス (REALTIME METRICS)</span>
           </h2>

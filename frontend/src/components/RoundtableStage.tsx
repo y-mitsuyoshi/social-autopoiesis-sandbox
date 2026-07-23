@@ -49,7 +49,7 @@ export const RoundtableStage: React.FC<RoundtableStageProps> = ({
       {/* Top Stage Header */}
       <div className="relative z-10 flex items-center justify-between border-b border-slate-800/80 pb-3">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
           <h2 className="text-sm font-bold text-slate-100 tracking-wide flex items-center gap-2">
             <span>🗣️ 人間アバター対話ステージ</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-900/60 border border-indigo-500/40 text-indigo-300 font-mono">
@@ -76,11 +76,11 @@ export const RoundtableStage: React.FC<RoundtableStageProps> = ({
 
           {/* Active Spoken Speech Highlight in Center of Table */}
           {lastMessage && (
-            <div className="mt-3 max-w-md w-full p-3 rounded-xl bg-slate-900/95 border border-indigo-500/40 shadow-xl transition-all duration-300 animate-fadeIn">
+            <div className="mt-3 max-w-md w-full p-3 rounded-xl bg-slate-900/95 border border-indigo-500/40 shadow-xl transition-all duration-300">
               <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
                 <span className="font-bold text-amber-400 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                  Turn {lastMessage.turn}: {lastMessage.agent_name} 発言中
+                  <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
+                  Turn {lastMessage.turn}: {lastMessage.agent_name} 発言
                 </span>
                 <span>{lastMessage.agent_code}</span>
               </div>
@@ -123,7 +123,7 @@ export const RoundtableStage: React.FC<RoundtableStageProps> = ({
 
                 {/* Speech Bubble floating next to speaker in stage */}
                 {isSpeaking && lastMessage && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-64 p-3 bg-indigo-950/95 text-slate-100 border border-indigo-400/60 rounded-2xl shadow-2xl z-30 animate-bounce-short">
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-64 p-3 bg-indigo-950/95 text-slate-100 border border-indigo-400/60 rounded-2xl shadow-2xl z-30">
                     <div className="text-[10px] font-bold text-indigo-300 mb-1 flex items-center justify-between">
                       <span>{agent.name}</span>
                       <span className="text-amber-300">【{agent.binaryCode}】</span>
