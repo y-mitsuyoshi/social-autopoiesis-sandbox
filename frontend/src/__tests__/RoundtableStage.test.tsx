@@ -68,10 +68,10 @@ describe("RoundtableStage & Beginner Panels Tests", () => {
     );
 
     expect(screen.getByText("🎓 ルマン先生のやさしい解説")).toBeInTheDocument();
-    expect(screen.getByText("📖 用語かみくだく辞典")).toBeInTheDocument();
+    expect(screen.getByText("📖 用語辞典")).toBeInTheDocument();
 
     // Click tab
-    fireEvent.click(screen.getByText("📖 用語かみくだく辞典"));
+    fireEvent.click(screen.getByText("📖 用語辞典"));
     expect(screen.getByText("【判断のものさし】")).toBeInTheDocument();
   });
 

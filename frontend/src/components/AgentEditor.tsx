@@ -45,6 +45,7 @@ export function AgentEditor({
 }: AgentEditorProps) {
   const [trigger, setTrigger] = useState("");
   const [maxTurns, setMaxTurns] = useState(15);
+  const [autoConverge, setAutoConverge] = useState(false);
   const [agentOrderMode, setAgentOrderMode] = useState<"fixed" | "dynamic">("fixed");
   const [dirty, setDirty] = useState(false);
   const [healthStatus, setHealthStatus] = useState<Record<string, { status: string; response?: string; message?: string }> | null>(null);
@@ -135,7 +136,7 @@ export function AgentEditor({
   const canSubmit =
     !disabled &&
     trigger.trim().length > 0 &&
-    maxTurns >= 0 &&
+    (autoConverge || maxTurns > 0) &&
     validationError === null &&
     specs.length > 0;
 
@@ -143,7 +144,7 @@ export function AgentEditor({
     if (!canSubmit) return;
     onSubmit({
       trigger_message: trigger.trim(),
-      max_turns: maxTurns,
+      max_turns: autoConverge ? 0 : maxTurns,
       agent_order_mode: agentOrderMode,
       agents_inline: specs,
     });
@@ -242,7 +243,7 @@ export function AgentEditor({
               htmlFor="editor-max-turns"
               className="mb-0.5 block text-sm text-cyberpunk-neon"
             >
-              MAX TURNS
+              MAX TURNS {autoConverge && <span className="text-amber-300 font-bold text-[11px]">(♻️ 自動収束モード)</span>}
             </label>
             <input
               id="editor-max-turns"
@@ -251,10 +252,23 @@ export function AgentEditor({
               min={0}
               value={maxTurns}
               onChange={(e) => setMaxTurns(Number(e.target.value))}
-              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none"
+              disabled={autoConverge}
+              className="w-full border border-cyberpunk-neon/40 bg-cyberpunk-bg/80 p-1 text-sm text-cyberpunk-text outline-none disabled:opacity-40"
             />
           </div>
         </div>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-cyberpunk-text/80 bg-cyberpunk-bg/40 border border-cyberpunk-neon/20 rounded px-2 py-1.5">
+          <input
+            type="checkbox"
+            aria-label="auto-converge"
+            checked={autoConverge}
+            onChange={(e) => setAutoConverge(e.target.checked)}
+            className="accent-cyberpunk-accent"
+          />
+          <span>
+            ♻️ 自動収束モード（回数上限なし。議論がまとまったら自動終了）
+          </span>
+        </label>
         <fieldset className="space-y-1">
           <legend className="text-sm text-cyberpunk-neon">AGENT ORDER MODE</legend>
           <div className="flex gap-3 text-sm">

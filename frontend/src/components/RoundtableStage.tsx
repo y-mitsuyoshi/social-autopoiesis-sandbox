@@ -80,7 +80,7 @@ export const RoundtableStage: React.FC<RoundtableStageProps> = ({
               <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
                 <span className="font-bold text-amber-400 flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
-                  Turn {lastMessage.turn}: {lastMessage.agent_name} 発言
+                  Turn {lastMessage.turn + 1}: {lastMessage.agent_name} 発言
                 </span>
                 <span>{lastMessage.agent_code}</span>
               </div>

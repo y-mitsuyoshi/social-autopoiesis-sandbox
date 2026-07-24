@@ -8,6 +8,7 @@ export interface AnalysisPanelProps {
   messages: Message[];
   agents: Record<string, AgentNode>;
   status: SimulationStatus;
+  endReason?: string | null;
 }
 
 function heatColor(count: number, maxCount: number): string {
@@ -23,6 +24,7 @@ export function AnalysisPanel({
   messages,
   agents,
   status,
+  endReason,
 }: AnalysisPanelProps) {
   const analysis = useMemo(
     () => computeAnalysis(messages, agents),
@@ -180,6 +182,12 @@ export function AnalysisPanel({
             AUTOPOIESIS ANALYSIS
           </span>
         </div>
+        {endReason && (
+          <div className="bg-emerald-950/50 border border-emerald-500/40 rounded-lg p-2 text-emerald-200">
+            <span className="font-bold">🏁 終了理由: </span>
+            {endReason}
+          </div>
+        )}
         <p className="text-slate-200 leading-relaxed font-sans">
           本シミュレーション（全 {messages.length} ターン）において、外部の人間個人の心理介入を受けることなく、社会システム群（{agentNames.join("・")}）が互いの発言を「自己の二元コード」に翻訳し合いながら自律再生（オートポイエーシス）を遂行しました。
         </p>
@@ -197,6 +205,17 @@ export function AnalysisPanel({
             <span>
               <strong>二元コードの自己創出:</strong>{" "}
               法（合法/違法）と経済（支払/非支払）などの視点が対立しながらも、コミュニケーションが会話自体を資源として循環する「自律増殖回路」が成立しました。
+            </span>
+          </div>
+          <div className="flex items-start gap-1.5">
+            <span className="text-amber-400">・</span>
+            <span>
+              <strong>オートポイエーシス判定: </strong>
+              {analysis.autopoiesis.totalScore >= 0.6
+                ? "会話の連鎖が多様に絡み合い、社会システムが自らの要素（コミュニケーション）を自己産出する「作動的閉鎖」が強固に成立しています。ルーマンの言う社会の自律性が可視化されました。"
+                : analysis.autopoiesis.totalScore >= 0.3
+                  ? "部分的にコミュニケーション連鎖が形成されつつありますが、システム間の相互作用がまだ一方向に偏っており、完全な作動的閉鎖には至っていません。さらに議論を重ねることで自律増殖回路が成熟する余地があります。"
+                  : "システム間の相互作用が限定的で、オートポイエーシス（自己再生）の成立には至っていません。お題やターン数を調整して、より多様な視点が交差する環境を整えることを推奨します。"}
             </span>
           </div>
         </div>

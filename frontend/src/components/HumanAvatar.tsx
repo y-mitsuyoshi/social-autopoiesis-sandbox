@@ -201,19 +201,12 @@ export const HumanAvatar: React.FC<HumanAvatarProps> = ({
       className={`inline-flex flex-col items-center select-none ${onClick ? "cursor-pointer group" : ""} ${className}`}
     >
       <div className="relative">
-        {state === "speaking" && (
-          <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-indigo-500 opacity-60 blur-sm" />
-        )}
-        {state === "thinking" && (
-          <div className="absolute -inset-1.5 rounded-full bg-amber-400 opacity-40 blur-xs" />
-        )}
-
         <div
-          className={`relative ${sizeClasses} rounded-full overflow-hidden border-2 transition-all duration-300 shadow-lg bg-gradient-to-br ${persona.avatarGradient} ${
+          className={`relative ${sizeClasses} rounded-full overflow-hidden border-2 transition-all duration-300 shadow-md bg-gradient-to-br ${persona.avatarGradient} ${
             state === "speaking"
-              ? "border-amber-300 scale-105 ring-4 ring-amber-400/50"
+              ? "border-amber-400 scale-105 ring-4 ring-amber-400/60 shadow-[0_0_15px_rgba(251,191,36,0.4)]"
               : state === "thinking"
-              ? "border-amber-400 opacity-90 ring-2 ring-amber-300/40"
+              ? "border-amber-300 opacity-90 ring-2 ring-amber-300/40"
               : "border-slate-700/60 group-hover:border-indigo-400 group-hover:scale-105"
           }`}
           style={{ borderColor: persona.avatarColor }}
@@ -221,7 +214,7 @@ export const HumanAvatar: React.FC<HumanAvatarProps> = ({
           {renderSvgPortrait()}
 
           {state === "speaking" && (
-            <div className="absolute bottom-1 left-0 right-0 flex items-end justify-center space-x-0.5 h-3 px-2 bg-black/40 backdrop-blur-[1px]">
+            <div className="absolute bottom-1 left-0 right-0 flex items-end justify-center space-x-0.5 h-3 px-2 bg-black/50">
               <span className="w-1 bg-amber-300 rounded-full h-2" />
               <span className="w-1 bg-amber-400 rounded-full h-3" />
               <span className="w-1 bg-amber-200 rounded-full h-2.5" />

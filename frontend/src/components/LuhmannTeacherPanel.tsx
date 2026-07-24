@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { HumanAvatar } from "./HumanAvatar";
 import { LUHMANN_DICTIONARY, getEli5MessageSummary } from "../lib/eli5Translator";
-import type { Message } from "../types";
+import type { Message, SimulationStatus } from "../types";
 
 interface LuhmannTeacherPanelProps {
   lastMessage?: Message | null;
   turnCount: number;
   isOpen: boolean;
   onClose: () => void;
+  status?: SimulationStatus;
+  endReason?: string | null;
 }
 
 export const LuhmannTeacherPanel: React.FC<LuhmannTeacherPanelProps> = ({
@@ -15,12 +17,15 @@ export const LuhmannTeacherPanel: React.FC<LuhmannTeacherPanelProps> = ({
   turnCount,
   isOpen,
   onClose,
+  status = "idle",
+  endReason,
 }) => {
-  const [activeTab, setActiveTab] = useState<"live" | "concepts" | "faq">("live");
+  const [activeTab, setActiveTab] = useState<"live" | "summary" | "concepts" | "faq">("live");
 
   if (!isOpen) return null;
 
   const currentSummary = lastMessage ? getEli5MessageSummary(lastMessage) : null;
+  const isFinished = status === "completed" || status === "failed";
 
   return (
     <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-slate-900/95 border-l border-slate-700 shadow-2xl backdrop-blur-md flex flex-col text-slate-100 animate-slideLeft">
@@ -65,6 +70,16 @@ export const LuhmannTeacherPanel: React.FC<LuhmannTeacherPanelProps> = ({
           🎙️ リアルタイム実況
         </button>
         <button
+          onClick={() => setActiveTab("summary")}
+          className={`flex-1 py-2.5 font-semibold text-center border-b-2 transition-colors ${
+            activeTab === "summary"
+              ? "border-purple-400 text-purple-300 bg-purple-950/30"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          🏁 総括解説
+        </button>
+        <button
           onClick={() => setActiveTab("concepts")}
           className={`flex-1 py-2.5 font-semibold text-center border-b-2 transition-colors ${
             activeTab === "concepts"
@@ -72,7 +87,7 @@ export const LuhmannTeacherPanel: React.FC<LuhmannTeacherPanelProps> = ({
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
-          📖 用語かみくだく辞典
+          📖 用語辞典
         </button>
         <button
           onClick={() => setActiveTab("faq")}
@@ -82,7 +97,7 @@ export const LuhmannTeacherPanel: React.FC<LuhmannTeacherPanelProps> = ({
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
-          ❓ よくある疑問 (Q&A)
+          ❓ Q&A
         </button>
       </div>
 
@@ -94,18 +109,22 @@ export const LuhmannTeacherPanel: React.FC<LuhmannTeacherPanelProps> = ({
             <div className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/30">
               <div className="font-bold text-purple-300 text-sm mb-1 flex items-center justify-between">
                 <span>ルマン先生の実況メモ (Turn {turnCount})</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-900 text-purple-200">
-                  LIVE
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                  isFinished ? "bg-slate-700 text-slate-200" : "bg-purple-900 text-purple-200"
+                }`}>
+                  {isFinished ? "ENDED" : "LIVE"}
                 </span>
               </div>
               <p className="text-slate-200 leading-relaxed">
-                {lastMessage
-                  ? `いま、【${lastMessage.agent_name}】が議論に参加しました！各自が他人の発言を自分の「専門の物差し（二元コード）」に変換して次の言葉を生み出しています。`
-                  : "シミュレーションを開始すると、ここにルマン先生のリアルタイム実況が表示されます。"}
+                {isFinished
+                  ? "議論が終了しました。各システムは自分の物差し（二元コード）で他者の発言を翻訳し、会話が会話を呼ぶ連鎖（オートポイエーシス）が観察されました。「総括解説」タブで全体の振り返りを読めます。"
+                  : lastMessage
+                    ? `いま、【${lastMessage.agent_name}】が議論に参加しました！各自が他人の発言を自分の「専門の物差し（二元コード）」に変換して次の言葉を生み出しています。`
+                    : "シミュレーションを開始すると、ここにルマン先生のリアルタイム実況が表示されます。"}
               </p>
             </div>
 
-            {currentSummary && (
+            {currentSummary && !isFinished && (
               <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-100">
                 <div className="font-bold text-amber-300 text-xs mb-1">
                   💡 今のやり取りを１行で言うと？
@@ -130,7 +149,7 @@ export const LuhmannTeacherPanel: React.FC<LuhmannTeacherPanelProps> = ({
                   <span className="text-purple-400 font-bold">2.</span>
                   <span>
                     <strong>終わりなく言葉が続く:</strong>{" "}
-                    ひとつの言葉が次の言葉の「刺激」となり、永久に会話が連鎖（自己再生＝オートポイエーシス）します。
+                    ひとつの言葉が次の言葉の「刺激」となり、会話が連鎖（自己再生＝オートポイエーシス）します。
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -145,7 +164,71 @@ export const LuhmannTeacherPanel: React.FC<LuhmannTeacherPanelProps> = ({
           </div>
         )}
 
-        {/* Tab 2: Simplified Dictionary */}
+        {/* Tab 2: Summary Commentary (after discussion ends) */}
+        {activeTab === "summary" && (
+          <div className="space-y-4">
+            {isFinished ? (
+              <>
+                <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40">
+                  <div className="font-bold text-emerald-300 text-sm mb-1 flex items-center gap-1.5">
+                    <span>🏁 議論は終了しました</span>
+                  </div>
+                  <p className="text-slate-200 leading-relaxed">
+                    全 {turnCount} ターンの議論を経て、社会システム群は互いに刺激を与え合いながら、
+                    それぞれの「二元コード」で世界を観察し続けました。
+                    {endReason && (
+                      <span className="block mt-1 text-emerald-200">
+                        終了理由: {endReason}
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-purple-950/40 border border-purple-500/30 space-y-3">
+                  <h3 className="font-bold text-purple-200 text-sm">
+                    🎓 ルマン先生の総括
+                  </h3>
+                  <p className="text-slate-200 leading-relaxed">
+                    この議論では、人間個人が「議論をまとめよう」と意図したわけではありません。
+                    それにもかかわらず、法・経済・科学といった各システムが
+                    <strong>他者の発言を自分の物差し（二元コード）に翻訳して再発話する</strong>
+                    という連鎖が自然に発生しました。これこそがルーマン社会システム論の核心です。
+                  </p>
+                  <p className="text-slate-200 leading-relaxed">
+                    つまり社会は「人間の集合」ではなく、
+                    <strong>「コミュニケーションの連鎖そのもの」</strong>
+                    です。人間が交替しても、法は合法/違法、経済は支払/非支払という
+                    コードで世界を観察し続け、会話が会話を生み出す自律系（オートポイエーシス）が回り続けます。
+                  </p>
+                  <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 text-[11px] text-slate-300 space-y-1.5">
+                    <div className="font-semibold text-indigo-300">📊 作動的閉鎖の観察ポイント:</div>
+                    <div>・ 各システムは自分のコードでしか応答できない（作動的閉鎖）</div>
+                    <div>・ 他システムの言葉は「刺激」として受け取り、自分の言葉に翻訳する（構造的結合）</div>
+                    <div>・ お題（外部環境）が変わっても、内部のコードは維持される</div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/40">
+                  <h3 className="font-bold text-amber-300 text-xs mb-2">
+                    💡 この実験から何が分かる？
+                  </h3>
+                  <ul className="space-y-1.5 text-slate-200">
+                    <li>• 社会の主役は人間ではなく「コミュニケーションの連鎖」である</li>
+                    <li>• システム同士は理解し合えなくても、刺激し合いながら共に進化する</li>
+                    <li>• 議論の「まとまり」は誰かの意図ではなく、連鎖そのものの性質として立ち現れる</li>
+                  </ul>
+                </div>
+              </>
+            ) : (
+              <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300">
+                議論が終了すると、ここにルマン先生による総括解説が表示されます。
+                シミュレーションを開始し、議論が終わるのをお待ちください。
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 3: Simplified Dictionary */}
         {activeTab === "concepts" && (
           <div className="space-y-3">
             <p className="text-slate-400 text-[11px]">
@@ -175,7 +258,7 @@ export const LuhmannTeacherPanel: React.FC<LuhmannTeacherPanelProps> = ({
           </div>
         )}
 
-        {/* Tab 3: Q&A Accordion */}
+        {/* Tab 4: Q&A */}
         {activeTab === "faq" && (
           <div className="space-y-3">
             <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700">

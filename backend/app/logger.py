@@ -44,7 +44,8 @@ class SimulationLogger:
                 return
             self._file.write(msg.model_dump_json() + "\n")
             self._file.flush()
-            self._turn_count += 1
+            if msg.provider != "system":
+                self._turn_count += 1
             for q in self._subscribers:
                 await q.put(msg)
 

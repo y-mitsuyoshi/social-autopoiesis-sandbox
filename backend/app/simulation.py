@@ -125,12 +125,49 @@ async def run_simulation(
     history: list[str | tuple[str, str, str]] = []
     spoken_in_cycle: set[str] = set()
     last_speaker: str | None = None
+    convergence_reason: str | None = None
 
     try:
         turn = 0
         while True:
-            if config.max_turns and turn >= config.max_turns:
+            # Fixed turn count limit check (when max_turns > 0)
+            if config.max_turns > 0 and turn >= config.max_turns:
+                convergence_reason = f"指定ターン数（{config.max_turns}）に到達しました"
                 break
+
+            # Auto-convergence mode check (when max_turns == 0)
+            if config.max_turns <= 0:
+                # Hard upper cap to prevent infinite loops
+                if turn >= 30:
+                    convergence_reason = "上限ターン数（30）に到達したため議論を終了します"
+                    print(f"[Auto-Convergence] 上限ターン到達により終了 (Turn {turn})")
+                    break
+                # Require a minimum number of turns before checking convergence
+                if turn >= 6 and history:
+                    recent_texts = " ".join(
+                        [h[2] if isinstance(h, tuple) else str(h) for h in history[-3:]]
+                    )
+                    convergence_keywords = [
+                        "合意",
+                        "まとま",
+                        "解決",
+                        "納得",
+                        "結論",
+                        "共通理解",
+                        "方針",
+                        "総括",
+                        "同意",
+                        "落ち着",
+                        "これで",
+                        "まとまり",
+                    ]
+                    hit = [kw for kw in convergence_keywords if kw in recent_texts]
+                    if hit:
+                        convergence_reason = (
+                            f"議論の自然収束を検知しました（キーワード: {', '.join(hit)}）"
+                        )
+                        print(f"[Auto-Convergence] {convergence_reason} (Turn {turn})")
+                        break
 
             if config.agent_order_mode == "dynamic" and meta_agent is not None:
                 # Reset cycle when all non-meta agents have spoken
@@ -231,3 +268,17 @@ async def run_simulation(
     except asyncio.CancelledError:
         print("\nシミュレーションを中断します。")
         raise
+
+    # Emit a synthetic final message announcing the end of the discussion so
+    # the front-end can render an explicit "議論終了" marker. This is logged
+    # *before* the simulation completes so the WebSocket receives it.
+    if convergence_reason:
+        final_msg = Message(
+            turn=turn,
+            agent_name="システム",
+            agent_code="終了/継続",
+            message=f"【議論終了】{convergence_reason}",
+            provider="system",
+            model="system",
+        )
+        await logger.log(final_msg)

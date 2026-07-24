@@ -20,7 +20,7 @@ const messages: Message[] = [
     agent_code: "真/偽",
     message: "発言1",
     provider: "ollama",
-    model: "gpt-oss:20b",
+    model: "gemma4:31b",
   },
 ];
 
@@ -41,7 +41,7 @@ const agents: Record<string, AgentNode> = {
     state: "speaking",
     speakCount: 1,
     provider: "ollama",
-    model: "gpt-oss:20b",
+    model: "gemma4:31b",
   },
 };
 

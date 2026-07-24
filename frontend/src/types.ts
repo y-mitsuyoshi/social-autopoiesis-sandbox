@@ -9,6 +9,16 @@ export interface Message {
   concern?: string;
 }
 
+export function isSystemEndMessage(m: Message): boolean {
+  return m.provider === "system" && m.agent_name === "システム";
+}
+
+export function parseSystemEndReason(m: Message): string | null {
+  if (!isSystemEndMessage(m)) return null;
+  const match = m.message.match(/^【議論終了】(.+)$/);
+  return match ? match[1] : m.message;
+}
+
 export interface SimulationStartResponse {
   simulation_id: string;
   status: "running" | "completed" | "failed";

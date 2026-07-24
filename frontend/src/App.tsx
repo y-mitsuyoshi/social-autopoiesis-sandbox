@@ -30,6 +30,7 @@ import type {
   NetworkViewMode,
   SimulationStatus,
 } from "./types";
+import { parseSystemEndReason } from "./types";
 
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -53,6 +54,7 @@ export default function App() {
   const [selectedAvatarModal, setSelectedAvatarModal] = useState<AgentNode | null>(null);
   const [networkViewMode, setNetworkViewMode] = useState<NetworkViewMode>("roundtable");
   const [centerGraphTab, setCenterGraphTab] = useState<"metrics" | "speak">("metrics");
+  const [endReason, setEndReason] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const statusRef = useRef<SimulationStatus>(status);
@@ -125,14 +127,17 @@ export default function App() {
   const edges = useMemo(() => buildEdges(messages), [messages]);
 
   const currentSpeaker =
-    messages.length > 0 ? messages[messages.length - 1].agent_name : null;
+    messages.length > 0 && messages[messages.length - 1].provider !== "system"
+      ? messages[messages.length - 1].agent_name
+      : null;
 
   const nextSpeaker = useMemo(() => {
+    if (status !== "running") return null;
     if (agentOrderMode !== "fixed" || agentOrder.length === 0) return null;
     const lastTurn = messages.length > 0 ? messages[messages.length - 1].turn : -1;
     const nextIdx = (lastTurn + 1) % agentOrder.length;
     return agentOrder[nextIdx] ?? null;
-  }, [agentOrderMode, agentOrder, messages]);
+  }, [status, agentOrderMode, agentOrder, messages]);
 
   const agentsWithState = useMemo<Record<string, AgentNode>>(() => {
     const result: Record<string, AgentNode> = {};
@@ -168,6 +173,7 @@ export default function App() {
     setMessages([]);
     setError(null);
     setStatus("running");
+    setEndReason(null);
     setStartedAt(Date.now());
     setMaxTurns(params.max_turns);
     setAgentOrderMode(params.agent_order_mode);
@@ -184,6 +190,12 @@ export default function App() {
       wsRef.current = openSimulationSocket(
         resp.simulation_id,
         (m) => {
+          const reason = parseSystemEndReason(m);
+          if (reason) {
+            setEndReason(reason);
+            setStatus("completed");
+            return;
+          }
           setMessages((prev) => [...prev, m]);
           setAgentOrder((prev) =>
             prev.includes(m.agent_name) ? prev : [...prev, m.agent_name],
@@ -225,11 +237,19 @@ export default function App() {
     setError(null);
     try {
       const logs = await fetchSimulationLogs(simulationId);
-      setMessages(logs);
+      const endLog = logs.find((m) => m.provider === "system");
+      const content = logs.filter((m) => m.provider !== "system");
+      setMessages(content);
       setStartedAt(null);
       setStatus("completed");
+      if (endLog) {
+        const r = endLog.message.match(/^【議論終了】(.+)$/);
+        setEndReason(r ? r[1] : endLog.message);
+      } else {
+        setEndReason(null);
+      }
       const order: string[] = [];
-      for (const m of logs) {
+      for (const m of content) {
         if (!order.includes(m.agent_name)) order.push(m.agent_name);
       }
       setAgentOrder(order);
@@ -340,10 +360,12 @@ export default function App() {
                 <span className="text-xl">🎉</span>
                 <div>
                   <div className="text-sm font-bold text-indigo-200 tracking-wide">
-                    シミュレーション完了 (SIMULATION COMPLETED)
+                    議論終了 (DISCUSSION ENDED)
                   </div>
                   <div className="text-xs text-indigo-300">
-                    全 {messages.length} ターンの議論が完了しました。全体の総合考察は右下の「社会システム総合分析」パネルで確認できます。
+                    全 {messages.length} ターンの議論が完了しました。
+                    {endReason && <span className="text-emerald-300"> 理由: {endReason}</span>}
+                    全体の総括は右下の「社会システム総合分析」パネルで確認できます。
                   </div>
                 </div>
               </div>
@@ -587,6 +609,7 @@ export default function App() {
               messages={messages}
               agents={agentsWithState}
               status={status}
+              endReason={endReason}
             />
           </aside>
         </div>
@@ -599,6 +622,8 @@ export default function App() {
         onClose={() => setTeacherOpen(false)}
         lastMessage={messages.length > 0 ? messages[messages.length - 1] : null}
         turnCount={messages.length}
+        status={status}
+        endReason={endReason}
       />
       <AvatarDetailModal
         agent={selectedAvatarModal}

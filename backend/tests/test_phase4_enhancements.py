@@ -79,21 +79,27 @@ async def test_general_agent_timeout_resilience(tmp_path: Path) -> None:
 
     text = logger.path.read_text(encoding="utf-8")
     messages = [Message.model_validate_json(line) for line in text.splitlines() if line.strip()]
-    assert len(messages) == 4
+    content_messages = [m for m in messages if m.provider != "system"]
+    assert len(content_messages) == 4
 
     # Even-indexed turns (0, 2) are AgentA -> should be fallback messages
-    assert messages[0].agent_name == "AgentA"
-    assert "環境からのノイズにより" in messages[0].message
-    assert messages[0].provider == "fallback"
+    assert content_messages[0].agent_name == "AgentA"
+    assert "環境からのノイズにより" in content_messages[0].message
+    assert content_messages[0].provider == "fallback"
 
-    assert messages[2].agent_name == "AgentA"
-    assert "環境からのノイズにより" in messages[2].message
-    assert messages[2].provider == "fallback"
+    assert content_messages[2].agent_name == "AgentA"
+    assert "環境からのノイズにより" in content_messages[2].message
+    assert content_messages[2].provider == "fallback"
 
     # Odd-indexed turns (1, 3) are AgentB -> should be normal response
-    assert messages[1].agent_name == "AgentB"
-    assert messages[1].message == "ResponseB"
-    assert messages[1].provider == "dummy"
+    assert content_messages[1].agent_name == "AgentB"
+    assert content_messages[1].message == "ResponseB"
+    assert content_messages[1].provider == "dummy"
+
+    # System end message should be present
+    assert messages[-1].provider == "system"
+    assert messages[-1].agent_name == "システム"
+    assert "【議論終了】" in messages[-1].message
 
 
 @pytest.mark.asyncio
@@ -155,10 +161,11 @@ async def test_moderator_meta_agent_timeout_resilience(tmp_path: Path) -> None:
     # Check that the simulation completed successfully despite moderator failure
     text = logger.path.read_text(encoding="utf-8")
     messages = [Message.model_validate_json(line) for line in text.splitlines() if line.strip()]
-    assert len(messages) == 3
+    content_messages = [m for m in messages if m.provider != "system"]
+    assert len(content_messages) == 3
 
     # Check that turns were scheduled despite moderator timeout
-    speakers = [msg.agent_name for msg in messages]
+    speakers = [msg.agent_name for msg in content_messages]
     assert len(speakers) == 3
 
 
@@ -256,9 +263,10 @@ async def test_scheduler_turn_enforcement_and_cycle_boundary(tmp_path: Path) -> 
 
     text = logger.path.read_text(encoding="utf-8")
     messages = [Message.model_validate_json(line) for line in text.splitlines() if line.strip()]
-    assert len(messages) == 7
+    content_messages = [m for m in messages if m.provider != "system"]
+    assert len(content_messages) == 7
 
-    speakers = [m.agent_name for m in messages]
+    speakers = [m.agent_name for m in content_messages]
 
     # Verify Cycle 1: turns 0, 1, 2
     cycle1 = speakers[0:3]

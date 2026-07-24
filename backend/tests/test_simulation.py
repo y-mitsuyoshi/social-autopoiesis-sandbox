@@ -57,11 +57,12 @@ async def test_simulation_round_robin(
     lines = await asyncio.to_thread(
         lambda: jsonl_files[0].read_text(encoding="utf-8").strip().split("\n")
     )
-    assert len(lines) == 6
+    content_lines = [ln for ln in lines if json.loads(ln).get("provider") != "system"]
+    assert len(content_lines) == 6
 
     expected_order = ["経済システム", "科学システム", "法システム"]
     expected_codes = ["支払/非支払", "真/偽", "合法/違法"]
-    for i, line in enumerate(lines):
+    for i, line in enumerate(content_lines):
         obj = json.loads(line)
         assert obj["turn"] == i
         assert obj["agent_name"] == expected_order[i % 3]
@@ -138,14 +139,17 @@ async def test_simulation_closes_on_llm_failure(tmp_logs_dir: Path) -> None:
     # Verify fallback messages
     text = logger.path.read_text(encoding="utf-8")
     logged_msgs = [Message.model_validate_json(line) for line in text.splitlines() if line.strip()]
-    assert len(logged_msgs) == 5
-    for msg in logged_msgs:
+    content_msgs = [m for m in logged_msgs if m.provider != "system"]
+    assert len(content_msgs) == 5
+    for msg in content_msgs:
         assert "環境からのノイズにより" in msg.message
         assert msg.provider == "fallback"
         assert msg.model == "fallback"
 
 
 async def test_simulation_max_turns_zero_graceful_cancel(tmp_logs_dir: Path) -> None:
+    """max_turns=0 triggers auto-convergence with a 30-turn hard cap.
+    The dummy client replies instantly so the sim completes before cancel."""
     client = DummyLLMClient(responses=["発言"])
     specs = _fallback_specs()
     clients: dict[str, LLMClient] = {a.name: client for a in specs}
@@ -156,26 +160,26 @@ async def test_simulation_max_turns_zero_graceful_cancel(tmp_logs_dir: Path) -> 
     )
     logger = SimulationLogger(logs_dir=tmp_logs_dir)
 
-    task = asyncio.create_task(run_simulation(config, specs, clients, logger))
-    for _ in range(100):
-        if len(client.calls) >= 1:
-            break
-        await asyncio.sleep(0.01)
-    task.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await task
+    exc: BaseException | None = None
+    try:
+        await run_simulation(config, specs, clients, logger)
+    except (asyncio.CancelledError, BaseException) as e:
+        exc = e
+    finally:
+        await client.aclose()
+        await logger.aclose()
 
-    assert len(client.calls) >= 1
-    await client.aclose()
-    await logger.aclose()
+    assert exc is None or isinstance(exc, asyncio.CancelledError)
     assert client.closed is True
+    assert len(client.calls) >= 1
     jsonl_files = await asyncio.to_thread(lambda: list(tmp_logs_dir.glob("*.jsonl")))
     assert len(jsonl_files) == 1
     lines = await asyncio.to_thread(
         lambda: jsonl_files[0].read_text(encoding="utf-8").strip().split("\n")
     )
-    assert len(lines) == len(client.calls)
-    for line in lines:
+    content_lines = [ln for ln in lines if json.loads(ln).get("provider") != "system"]
+    assert len(content_lines) == len(client.calls)
+    for line in content_lines:
         obj = json.loads(line)
         assert obj["agent_name"] in [a.name for a in specs]
 

@@ -90,8 +90,7 @@ export function TimelineList({
                 style={
                   isSpeaker
                     ? {
-                        borderLeft: "2px solid #ff9d00",
-                        animation: "tl-blink 1s ease-in-out infinite",
+                        borderLeft: "3px solid #ff9d00",
                         paddingLeft: 4,
                       }
                     : undefined

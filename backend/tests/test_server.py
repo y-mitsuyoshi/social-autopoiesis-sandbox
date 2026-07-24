@@ -174,10 +174,11 @@ def test_get_logs_returns_messages(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
         logs_resp = client.get(f"/api/simulations/{sim_id}/logs")
         assert logs_resp.status_code == 200
         logs = logs_resp.json()
-        assert len(logs) == 3
+        content_logs = [m for m in logs if m["provider"] != "system"]
+        assert len(content_logs) == 3
         names = [a.name for a in AGENTS]
-        assert [m["agent_name"] for m in logs] == names
-        assert all(m["provider"] == "dummy" for m in logs)
+        assert [m["agent_name"] for m in content_logs] == names
+        assert all(m["provider"] == "dummy" for m in content_logs)
 
 
 def test_get_simulation_not_found(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -331,8 +332,9 @@ def test_post_failed_status_on_llm_error(monkeypatch: pytest.MonkeyPatch, tmp_pa
 
         logs_resp = client.get(f"/api/simulations/{sim_id}/logs")
         logs = logs_resp.json()
-        assert len(logs) == 3
-        for log in logs:
+        content_logs = [m for m in logs if m["provider"] != "system"]
+        assert len(content_logs) == 3
+        for log in content_logs:
             assert "環境からのノイズにより" in log["message"]
             assert log["provider"] == "fallback"
             assert log["model"] == "fallback"
@@ -601,8 +603,9 @@ def test_post_completed_status_on_non_llm_exception(
 
         logs_resp = client.get(f"/api/simulations/{sim_id}/logs")
         logs = logs_resp.json()
-        assert len(logs) == 3
-        for log in logs:
+        content_logs = [m for m in logs if m["provider"] != "system"]
+        assert len(content_logs) == 3
+        for log in content_logs:
             assert "環境からのノイズにより" in log["message"]
             assert log["provider"] == "fallback"
             assert log["model"] == "fallback"

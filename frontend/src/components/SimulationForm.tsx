@@ -81,7 +81,7 @@ export function SimulationForm({
           htmlFor="max_turns"
           className="mb-1 block text-sm text-cyberpunk-neon"
         >
-          MAX TURNS / 最大ターン数
+          MAX TURNS / 最大ターン数 (0 で自動収束モード)
         </label>
         <input
           id="max_turns"
@@ -92,6 +92,11 @@ export function SimulationForm({
           onChange={(e) => setMaxTurns(Number(e.target.value))}
           disabled={disabled}
         />
+        {maxTurns === 0 && (
+          <p className="mt-1 text-[11px] text-amber-300">
+            ♾️ 自動収束モード: 議論が合意に達した時点で自律終了します
+          </p>
+        )}
       </div>
       <div>
         <label

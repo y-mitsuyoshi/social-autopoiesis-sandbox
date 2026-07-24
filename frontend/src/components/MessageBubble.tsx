@@ -51,7 +51,7 @@ export function MessageBubble({
         {/* Message Header */}
         <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-bold text-slate-200">
           <span className="rounded bg-indigo-950/80 border border-indigo-500/40 px-1.5 py-0.5 text-[11px] font-mono text-indigo-300">
-            Turn {message.turn}
+            Turn {message.turn + 1}
           </span>
           <span
             className="text-sm font-bold text-slate-100"
@@ -69,8 +69,8 @@ export function MessageBubble({
             {message.provider}/{message.model}
           </span>
           {live && (
-            <span className="ml-2 text-amber-400 text-[10px] animate-pulse font-bold flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span className="ml-2 text-amber-400 text-[10px] font-bold flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
               LIVE
             </span>
           )}
